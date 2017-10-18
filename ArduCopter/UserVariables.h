@@ -3,14 +3,23 @@
 // example variables used in Wii camera testing - replace with your own
 // variables
 #ifdef USERHOOK_VARIABLES
+#define BUFFER_FRAME_SIZE   15
 
-#if WII_CAMERA == 1
-WiiCamera           ircam;
-int                 WiiRange=0;
-int                 WiiRotation=0;
-int                 WiiDisplacementX=0;
-int                 WiiDisplacementY=0;
-#endif  // WII_CAMERA
+uint16_t ips_bytes;
+int32_t ips_data[4];
+uint16_t c_buff;
+uint16_t c_state;
+char ips_char[BUFFER_FRAME_SIZE];
+uint32_t ips_delay_ms; 
+
+
+// #if WII_CAMERA == 1
+// WiiCamera           ircam;
+// int                 WiiRange=0;
+// int                 WiiRotation=0;
+// int                 WiiDisplacementX=0;
+// int                 WiiDisplacementY=0;
+// #endif  // WII_CAMERA
 
 #endif  // USERHOOK_VARIABLES
 
