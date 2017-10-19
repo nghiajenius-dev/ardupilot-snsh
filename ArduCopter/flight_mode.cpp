@@ -45,6 +45,10 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
             success = althold_init(ignore_checks);
             break;
 
+        case HEADCUTTER:
+            success = headcutter_init(ignore_checks);
+            break;
+           
         case AUTO:
             success = auto_init(ignore_checks);
             break;
@@ -180,6 +184,10 @@ void Copter::update_flight_mode()
 
         case ALT_HOLD:
             althold_run();
+            break;
+
+        case HEADCUTTER:
+            headcutter_run();
             break;
 
         case AUTO:
@@ -335,7 +343,7 @@ bool Copter::mode_has_manual_throttle(control_mode_t mode)
 //  arming_from_gcs should be set to true if the arming request comes from the ground station
 bool Copter::mode_allows_arming(control_mode_t mode, bool arming_from_gcs)
 {
-    if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && (mode == GUIDED || mode == GUIDED_NOGPS))) {
+    if (mode_has_manual_throttle(mode) || mode == LOITER || mode == ALT_HOLD || mode == HEADCUTTER || mode == POSHOLD || mode == DRIFT || mode == SPORT || mode == THROW || (arming_from_gcs && (mode == GUIDED || mode == GUIDED_NOGPS))) {
         return true;
     }
     return false;
@@ -373,6 +381,9 @@ void Copter::notify_flight_mode(control_mode_t mode)
             break;
         case ALT_HOLD:
             notify.set_flight_mode_str("ALTH");
+            break;
+        case HEADCUTTER:
+            notify.set_flight_mode_str("HEADCUTTER");
             break;
         case AUTO:
             notify.set_flight_mode_str("AUTO");
@@ -439,6 +450,9 @@ void Copter::print_flight_mode(AP_HAL::BetterStream *port, uint8_t mode)
         break;
     case ALT_HOLD:
         port->printf("ALT_HOLD");
+        break;
+    case HEADCUTTER:
+        port->printf("HEADCUTTER");
         break;
     case AUTO:
         port->printf("AUTO");

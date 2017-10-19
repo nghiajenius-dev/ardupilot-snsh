@@ -131,6 +131,18 @@
 #include <SITL/SITL.h>
 #endif
 
+extern "C"{
+#include <math.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include "rt_nonfinite.h"
+#include "multirate_kalman.h"
+#include "rtwtypes.h"
+#include "multirate_kalman_types.h"
+#include "multirate_kalman_terminate.h"
+#include "multirate_kalman_initialize.h"
+}
 
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
@@ -783,6 +795,8 @@ private:
     void get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16_t yaw_in, float &roll_out, float &pitch_out, float &yaw_out);
     bool althold_init(bool ignore_checks);
     void althold_run();
+    bool headcutter_init(bool ignore_checks);
+    void headcutter_run();
     bool auto_init(bool ignore_checks);
     void auto_run();
     void auto_takeoff_start(const Location& dest_loc);

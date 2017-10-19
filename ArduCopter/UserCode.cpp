@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
@@ -9,7 +10,7 @@ void Copter::userhook_init()
     c_state = 0;    //0: wait-start-buff, 1: data-buffer, 2: end-buffer-->0
     ips_bytes = 0;
     optflow.init();
-
+    multirate_kalman_initialize();
 }
 #endif
 
@@ -37,6 +38,13 @@ void Copter::userhook_FastLoop()
                 ips_data[2] = (ips_char[9]-0x30)*100 + (ips_char[10]-0x30)*10 + (ips_char[11]-0x30); //pos_z
                 ips_data[3] = AP_HAL::millis()-ips_delay_ms;
                 hal.uartF->printf("%d,%d,%d,%d",ips_data[0],ips_data[1],ips_data[2],ips_data[3]);
+
+                ips_pos[0] = ips_data[0];
+                ips_pos[1] = ips_data[1];
+                ips_pos[2] = ips_data[2];
+                ips_flag = 1;
+
+
                 
             }
             hal.uartF->printf("\r\n");
@@ -55,11 +63,29 @@ void Copter::userhook_FastLoop()
     optflow.update();
     Vector2f opt_flowRate = optflow.flowRate();
     Vector2f opt_bodyRate = optflow.bodyRate();
-    hal.uartF->printf("%f,%f,%f,%f\r\n",opt_flowRate.x,opt_flowRate.y,opt_bodyRate.x,opt_bodyRate.y);
+    uint32_t opt_integration_timespan = optflow.integration_timespan();
+    float bodyRateZ = optflow.bodyRateZ();
 
-    // const v &gyro = ins.get_gyro();
-    // hal.uartF->printf("F:%d,%f,%f,%f,%f,%f,%f\r\n",AP_HAL::millis(),(double)ToDeg(ahrs.roll),(double)ToDeg(ahrs.pitch),(double)ToDeg(ahrs.yaw),gyro.x,gyro.y,gyro.z);
+    opt_flow[0]= opt_flowRate.x;
+    opt_flow[1]= opt_flowRate.y;
 
+    opt_gyro[0] = opt_bodyRate.x;
+    opt_gyro[1] = opt_bodyRate.y;
+    opt_gyro[2] = bodyRateZ;
+    // hal.uartF->printf("%f,%f,%f,%f,%d\r\n",opt_flowRate.x,opt_flowRate.y,opt_bodyRate.x,opt_bodyRate.y,opt_integration_timespan);
+
+//==============================LIDAR=====================================//
+	lidar_h = ips_pos[2];
+//==============================INS======================================//
+    
+    ips_gyro = ins.get_gyro();
+    ips_accel = ins.get_accel();
+    // hal.uartF->printf("INS:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",ips_gyro.x,ips_gyro.y,ips_gyro.z,ips_accel.x,ips_accel.y,ips_accel.z);
+
+//==============================KALMAN======================================//
+	multirate_kalman(ips_pos, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
+	hal.uartF->printf("K: %.3f, %.3f, %.3f\r\n",k_pos[0],k_pos[1],k_pos[2]);
+	ips_flag = 0;
 
 }
 #endif
@@ -74,7 +100,15 @@ void Copter::userhook_50Hz()
 #ifdef USERHOOK_MEDIUMLOOP
 void Copter::userhook_MediumLoop()
 {
-    // put your 10Hz code here
+    // put your 20Hz code here
+//==============================TEMPERATURE======================================//
+    air_temperature = barometer.get_temperature();
+    // hal.uartF->printf("temp:%f",air_temperature);
+
+//==============================IPS_TRANSMIT======================================//
+    hal.uartE->printf("{PARAM,TRIGGER_US}\n");
+    ips_delay_ms = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
+
 }
 #endif
 
