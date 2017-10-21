@@ -23,6 +23,8 @@ double opt_flow[2];
 double opt_gyro[3];
 double lidar_h;
 double k_pos[3];
+uint32_t k_timer;
+
 
 // #if WII_CAMERA == 1
 // WiiCamera           ircam;

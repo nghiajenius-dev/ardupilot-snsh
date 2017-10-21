@@ -10,6 +10,10 @@ void Copter::userhook_init()
     c_state = 0;    //0: wait-start-buff, 1: data-buffer, 2: end-buffer-->0
     ips_bytes = 0;
     optflow.init();
+    ips_pos[0] = 1;
+    ips_pos[1] = 1;
+    ips_pos[2] = 1;
+
     multirate_kalman_initialize();
 }
 #endif
@@ -21,6 +25,7 @@ void Copter::userhook_FastLoop()
     // uartF: serial5, baud 115200
 //================================IPS====================================//
     // Get available bytes
+    k_timer = AP_HAL::micros();
     ips_bytes = hal.uartF->available();
     while (ips_bytes-- > 0) {
         // Get data string here
@@ -36,7 +41,7 @@ void Copter::userhook_FastLoop()
                 ips_data[0] = (ips_char[1]-0x30)*100 + (ips_char[2]-0x30)*10 + (ips_char[3]-0x30); //pos_x
                 ips_data[1] = (ips_char[5]-0x30)*100 + (ips_char[6]-0x30)*10 + (ips_char[7]-0x30); //pos_y
                 ips_data[2] = (ips_char[9]-0x30)*100 + (ips_char[10]-0x30)*10 + (ips_char[11]-0x30); //pos_z
-                ips_data[3] = AP_HAL::millis()-ips_delay_ms;
+                // ips_data[3] = AP_HAL::micros()-ips_delay_ms;
                 hal.uartF->printf("%d,%d,%d,%d",ips_data[0],ips_data[1],ips_data[2],ips_data[3]);
 
                 ips_pos[0] = ips_data[0];
@@ -84,7 +89,8 @@ void Copter::userhook_FastLoop()
 
 //==============================KALMAN======================================//
 	multirate_kalman(ips_pos, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
-	hal.uartF->printf("K: %.3f, %.3f, %.3f\r\n",k_pos[0],k_pos[1],k_pos[2]);
+	k_timer = AP_HAL::micros()-k_timer;
+	hal.uartF->printf("K: %.3f, %.3f, %.3f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
 	ips_flag = 0;
 
 }
