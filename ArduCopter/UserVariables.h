@@ -25,6 +25,10 @@ double lidar_h;
 double k_pos[3];
 uint32_t k_timer;
 
+double R_OP[3];
+double nlsRCM[15] = {105, 204.3, 105.5, 5.9, 105, 5.8, 105.5, 204.5, 105, 105, 206.4, 206.4, 206.4, 206.4, 190};
+double nlsMR[5] = {186.3900,  187.6800,  208.5700,  209.0400,  154.1600};
+
 
 // #if WII_CAMERA == 1
 // WiiCamera           ircam;

@@ -15,6 +15,8 @@ void Copter::userhook_init()
     ips_pos[2] = 1;
 
     multirate_kalman_initialize();
+    LeastSquare_initialize();
+
 }
 #endif
 
@@ -25,7 +27,7 @@ void Copter::userhook_FastLoop()
     // uartF: serial5, baud 115200
 //================================IPS====================================//
     // Get available bytes
-    k_timer = AP_HAL::micros();
+    
     ips_bytes = hal.uartF->available();
     while (ips_bytes-- > 0) {
         // Get data string here
@@ -88,11 +90,16 @@ void Copter::userhook_FastLoop()
     // hal.uartF->printf("INS:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",ips_gyro.x,ips_gyro.y,ips_gyro.z,ips_accel.x,ips_accel.y,ips_accel.z);
 
 //==============================KALMAN======================================//
+	// multirate_kalman(ips_pos, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
+	if (ips_flag ==1)	
+		ips_flag = 0;
+	k_timer = AP_HAL::micros();
 	multirate_kalman(ips_pos, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
+	// LeastSquare(5, nlsRCM, nlsMR, 2, R_OP);
 	k_timer = AP_HAL::micros()-k_timer;
-	hal.uartF->printf("K: %.3f, %.3f, %.3f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
-	ips_flag = 0;
-
+	// hal.uartF->printf("K: %.3f, %.3f, %.3f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
+	hal.uartF->printf("NLS: %.3f, %.3f, %.3f, %d\r\n",R_OP[0],R_OP[1],R_OP[2],k_timer);
+	
 }
 #endif
 

@@ -131,17 +131,24 @@
 #include <SITL/SITL.h>
 #endif
 
+// MATLAB header files
 extern "C"{
 #include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include "rt_nonfinite.h"
-#include "multirate_kalman.h"
 #include "rtwtypes.h"
+
+#include "multirate_kalman.h"
 #include "multirate_kalman_types.h"
 #include "multirate_kalman_terminate.h"
 #include "multirate_kalman_initialize.h"
+
+#include "LeastSquare.h"
+#include "LeastSquare_types.h"
+#include "LeastSquare_terminate.h"
+#include "LeastSquare_initialize.h"    
 }
 
 class Copter : public AP_HAL::HAL::Callbacks {
