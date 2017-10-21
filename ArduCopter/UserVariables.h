@@ -17,7 +17,7 @@ Vector2f opt_flowRate;
 Vector2f opt_bodyRate;
 uint32_t opt_integration_timespan;
 
-double ips_pos[3];
+double ips_pos[3] = {123,456,789};
 double ips_flag;
 double opt_flow[2];
 double opt_gyro[3];

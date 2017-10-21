@@ -162,6 +162,7 @@ void Copter::read_battery(void)
     if (battery.get_type() != AP_BattMonitor::BattMonitor_TYPE_NONE) {
         motors->set_voltage(battery.voltage());
         AP_Notify::flags.battery_voltage = battery.voltage();
+
     }
     if (battery.has_current()) {
         motors->set_current(battery.current_amps());
@@ -177,6 +178,9 @@ void Copter::read_battery(void)
     if (should_log(MASK_LOG_CURRENT)) {
         Log_Write_Current();
     }
+    AP_Notify::flags.ips_x = ips_pos[0];
+    AP_Notify::flags.ips_y = ips_pos[1];
+    AP_Notify::flags.ips_z = ips_pos[2];
 }
 
 // read the receiver RSSI as an 8 bit number for MAVLink

@@ -10,13 +10,11 @@ void Copter::userhook_init()
     c_state = 0;    //0: wait-start-buff, 1: data-buffer, 2: end-buffer-->0
     ips_bytes = 0;
     optflow.init();
-    ips_pos[0] = 1;
-    ips_pos[1] = 1;
-    ips_pos[2] = 1;
-
+    // ips_pos[0] = 1;
+    // ips_pos[1] = 1;
+    // ips_pos[2] = 1;
     multirate_kalman_initialize();
     LeastSquare_initialize();
-
 }
 #endif
 
@@ -51,8 +49,6 @@ void Copter::userhook_FastLoop()
                 ips_pos[2] = ips_data[2];
                 ips_flag = 1;
 
-
-                
             }
             hal.uartF->printf("\r\n");
             c_buff = 0;

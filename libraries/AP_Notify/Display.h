@@ -15,10 +15,12 @@ public:
 
     bool init(void);
     void update();
+    void update_ips(uint8_t r);
 
 private:
     void draw_char(uint16_t x, uint16_t y, const char c);
     void draw_text(uint16_t x, uint16_t y, const char *c);
+    void draw_logo(uint16_t x, uint16_t y);
     void update_all();
     void update_arm(uint8_t r);
     void update_prearm(uint8_t r);
