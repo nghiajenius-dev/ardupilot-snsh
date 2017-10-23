@@ -135,10 +135,10 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
       }
     }
 
-    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * (x_pred[2] - 0.1);
+    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * (x_pred[2]);
 
     /* [m/s] */
-    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2] - 0.1);
+    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2]);
 
     /* [m/s] */
     yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;
@@ -298,10 +298,10 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
       }
     }
 
-    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * (x_pred[2] - 0.1);
+    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * (x_pred[2]);
 
     /* [m/s] */
-    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2] - 0.1);
+    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2]);
 
     /* [m/s] */
     yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;

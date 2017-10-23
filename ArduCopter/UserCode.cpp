@@ -10,11 +10,10 @@ void Copter::userhook_init()
     c_state = 0;    //0: wait-start-buff, 1: data-buffer, 2: end-buffer-->0
     ips_bytes = 0;
     optflow.init();
-    // ips_pos[0] = 1;
-    // ips_pos[1] = 1;
-    // ips_pos[2] = 1;
     multirate_kalman_initialize();
+#ifdef RUN_TRILATERATION
     LeastSquare_initialize();
+#endif
 }
 #endif
 
@@ -25,42 +24,45 @@ void Copter::userhook_FastLoop()
     // uartF: serial5, baud 115200
 //================================IPS====================================//
     // Get available bytes
-    
     ips_bytes = hal.uartF->available();
     while (ips_bytes-- > 0) {
         // Get data string here
         ips_char[0] = hal.uartF->read();
+        // start-of-frame
         if(ips_char[0] == 's'){
             c_buff = 1;
             c_state = 1;
         }
-        else if(ips_char[0] == 'e'){
-            // end-of-frame: get ips_pos & time_stamp
-            if((ips_char[4] ==',') && (ips_char[8] ==',') && (c_buff == 12)){
-                // valid frame
-                ips_data[0] = (ips_char[1]-0x30)*100 + (ips_char[2]-0x30)*10 + (ips_char[3]-0x30); //pos_x
-                ips_data[1] = (ips_char[5]-0x30)*100 + (ips_char[6]-0x30)*10 + (ips_char[7]-0x30); //pos_y
-                ips_data[2] = (ips_char[9]-0x30)*100 + (ips_char[10]-0x30)*10 + (ips_char[11]-0x30); //pos_z
-                // ips_data[3] = AP_HAL::micros()-ips_delay_ms;
-                hal.uartF->printf("%d,%d,%d,%d",ips_data[0],ips_data[1],ips_data[2],ips_data[3]);
-
-                ips_pos[0] = ips_data[0];
-                ips_pos[1] = ips_data[1];
-                ips_pos[2] = ips_data[2];
-                ips_flag = 1;
-
+        else if(ips_char[0] == '\n'){   // end-of-frame: start parsing
+            // number-of-receiver: 2bytes - 1 node
+            ips_nodes_cnt = 5;    
+            if((ips_nodes_cnt <= MAX_REV_NODE)){       // replaced by checksum in future
+                // parse data: int16_t, distance in mm
+                for(uint8_t i = 0; i < ips_nodes_cnt; i++){
+                    ips_data[i] = (ips_char[2*i + 2] << 8) | (ips_char[2*i + 1] << 0); //NODE i (0->4)
+                    if(i<5){
+                        nlsMR[i] = ips_data[i];
+                    }
+                }
+                ips_flag = 1;   // finish convert data --> start NLS
             }
-            hal.uartF->printf("\r\n");
             c_buff = 0;
             c_state = 0;
         }
-        else{
+        else{   // fill buffer after catch start header
             if(c_state == 1){
                 ips_char[c_buff] = ips_char[0];
                 // hal.uartF->printf("%c",ips_char[c_buff]);
                 c_buff++;
             }
         }
+    }
+//================================NLS====================================//
+    if (ips_flag == 1){
+        LeastSquare((double)ips_nodes_cnt, nlsRCM, nlsMR, 2, R_OP); 
+        ips_timer = AP_HAL::millis() - ips_timer;   
+        // hal.uartF->printf("NLS: %d, %d, %d, %d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2],ips_timer);  
+        // hal.uartF->printf("NLS: %d,%d,%d,%d,%d\r\n",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);  
     }
 //==============================PX4FLOW======================================//
     optflow.update();
@@ -78,7 +80,7 @@ void Copter::userhook_FastLoop()
     // hal.uartF->printf("%f,%f,%f,%f,%d\r\n",opt_flowRate.x,opt_flowRate.y,opt_bodyRate.x,opt_bodyRate.y,opt_integration_timespan);
 
 //==============================LIDAR=====================================//
-	lidar_h = ips_pos[2];
+	lidar_h = R_OP[2];     //ips_z
 //==============================INS======================================//
     
     ips_gyro = ins.get_gyro();
@@ -86,16 +88,16 @@ void Copter::userhook_FastLoop()
     // hal.uartF->printf("INS:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",ips_gyro.x,ips_gyro.y,ips_gyro.z,ips_accel.x,ips_accel.y,ips_accel.z);
 
 //==============================KALMAN======================================//
-	// multirate_kalman(ips_pos, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
-	if (ips_flag ==1)	
-		ips_flag = 0;
 	k_timer = AP_HAL::micros();
-	multirate_kalman(ips_pos, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
-	// LeastSquare(5, nlsRCM, nlsMR, 2, R_OP);
-	k_timer = AP_HAL::micros()-k_timer;
-	// hal.uartF->printf("K: %.3f, %.3f, %.3f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
-	hal.uartF->printf("NLS: %.3f, %.3f, %.3f, %d\r\n",R_OP[0],R_OP[1],R_OP[2],k_timer);
-	
+    // Convert mm -> m
+    R_OP[0] /= 1000; 
+    R_OP[1] /= 1000;
+    R_OP[2] /= 1000;
+	multirate_kalman(R_OP, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
+	k_timer = AP_HAL::micros()-k_timer;    
+    //reset ips flag
+    ips_flag = 0; 
+	hal.uartF->printf("K: %.2f, %.2f, %.2f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
 }
 #endif
 
@@ -116,8 +118,7 @@ void Copter::userhook_MediumLoop()
 
 //==============================IPS_TRANSMIT======================================//
     hal.uartE->printf("{PARAM,TRIGGER_US}\n");
-    ips_delay_ms = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
-
+    ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
 }
 #endif
 

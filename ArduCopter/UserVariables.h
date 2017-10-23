@@ -3,31 +3,41 @@
 // example variables used in Wii camera testing - replace with your own
 // variables
 #ifdef USERHOOK_VARIABLES
-#define BUFFER_FRAME_SIZE   15
+#define BUFFER_FRAME_SIZE   50
+#define MAX_REV_NODE		12
 
+// IPS
+#define RUN_TRILATERATION
 uint16_t ips_bytes;
-int32_t ips_data[4];
+int16_t ips_data[MAX_REV_NODE];
+char ips_char[BUFFER_FRAME_SIZE];
+// uint16_t ips_node;
+
+double ips_pos[3] = {123,456,789};
+double ips_flag;
+uint32_t ips_timer; 
 uint16_t c_buff;
 uint16_t c_state;
-char ips_char[BUFFER_FRAME_SIZE];
-uint32_t ips_delay_ms; 
+uint8_t ips_nodes_cnt;
+
+// SENSORS
 float air_temperature;
 Vector3f ips_gyro, ips_accel;
 Vector2f opt_flowRate;
 Vector2f opt_bodyRate;
 uint32_t opt_integration_timespan;
 
-double ips_pos[3] = {123,456,789};
-double ips_flag;
+// KALMAN
 double opt_flow[2];
 double opt_gyro[3];
 double lidar_h;
 double k_pos[3];
 uint32_t k_timer;
 
+// NLS
 double R_OP[3];
-double nlsRCM[15] = {105, 204.3, 105.5, 5.9, 105, 5.8, 105.5, 204.5, 105, 105, 206.4, 206.4, 206.4, 206.4, 190};
-double nlsMR[5] = {186.3900,  187.6800,  208.5700,  209.0400,  154.1600};
+double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
+int16_t nlsMR[5];
 
 
 // #if WII_CAMERA == 1
