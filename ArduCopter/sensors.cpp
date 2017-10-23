@@ -38,7 +38,7 @@ void Copter::read_rangefinder(void)
 {
 #if RANGEFINDER_ENABLED == ENABLED
     mavlink_message_t msg_sonar;
-    msg_sonar.checksum = 123;
+    msg_sonar.checksum = s16_range_finder;
 
     rangefinder.handle_msg(&msg_sonar);
     rangefinder.update();

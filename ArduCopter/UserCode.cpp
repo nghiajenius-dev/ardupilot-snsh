@@ -98,6 +98,8 @@ void Copter::userhook_FastLoop()
     //reset ips flag
     ips_flag = 0; 
 	hal.uartF->printf("K: %.2f, %.2f, %.2f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
+
+    s16_range_finder = (int16_t) R_OP[2]/10;
 }
 #endif
 
