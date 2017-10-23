@@ -78,9 +78,8 @@ void Copter::userhook_FastLoop()
     opt_gyro[1] = opt_bodyRate.y;
     opt_gyro[2] = bodyRateZ;
     // hal.uartF->printf("%f,%f,%f,%f,%d\r\n",opt_flowRate.x,opt_flowRate.y,opt_bodyRate.x,opt_bodyRate.y,opt_integration_timespan);
-
 //==============================LIDAR=====================================//
-	lidar_h = R_OP[2];     //ips_z
+	lidar_h = R_OP[2] / 1000;     //ips_z
 //==============================INS======================================//
     
     ips_gyro = ins.get_gyro();
@@ -99,7 +98,7 @@ void Copter::userhook_FastLoop()
     ips_flag = 0; 
 	hal.uartF->printf("K: %.2f, %.2f, %.2f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
 
-    s16_range_finder = (int16_t) R_OP[2]/10;
+    s16_range_finder = (int)(k_pos[2]*100);
 }
 #endif
 

@@ -39,7 +39,7 @@ double R_OP[3];
 double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
 int16_t nlsMR[5];
 
-int16_t s16_range_finder = 123;
+volatile uint16_t s16_range_finder = 123;
 
 
 // #if WII_CAMERA == 1
