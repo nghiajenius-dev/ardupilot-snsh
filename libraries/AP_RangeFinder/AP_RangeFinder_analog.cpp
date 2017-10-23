@@ -34,14 +34,14 @@ extern const AP_HAL::HAL& hal;
 AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t instance, RangeFinder::RangeFinder_State &_state) :
     AP_RangeFinder_Backend(_ranger, instance, _state)
 {
-    source = hal.analogin->channel(ranger._pin[instance]);
-    if (source == nullptr) {
-        // failed to allocate a ADC channel? This shouldn't happen
-        set_status(RangeFinder::RangeFinder_NotConnected);
-        return;
-    }
-    source->set_stop_pin((uint8_t)ranger._stop_pin[instance]);
-    source->set_settle_time((uint16_t)ranger._settle_time_ms[instance]);
+    // source = hal.analogin->channel(ranger._pin[instance]);
+    // if (source == nullptr) {
+    //     // failed to allocate a ADC channel? This shouldn't happen
+    //     set_status(RangeFinder::RangeFinder_NotConnected);
+    //     return;
+    // }
+    // source->set_stop_pin((uint8_t)ranger._stop_pin[instance]);
+    // source->set_settle_time((uint16_t)ranger._settle_time_ms[instance]);
     set_status(RangeFinder::RangeFinder_NoData);
 }
 
@@ -52,10 +52,11 @@ AP_RangeFinder_analog::AP_RangeFinder_analog(RangeFinder &_ranger, uint8_t insta
 */
 bool AP_RangeFinder_analog::detect(RangeFinder &_ranger, uint8_t instance)
 {
-    if (_ranger._pin[instance] != -1) {
-        return true;
-    }
-    return false;
+    // if (_ranger._pin[instance] != -1) {
+    //     return true;
+    // }
+    // return false;
+    return true;
 }
 
 
@@ -64,19 +65,20 @@ bool AP_RangeFinder_analog::detect(RangeFinder &_ranger, uint8_t instance)
  */
 void AP_RangeFinder_analog::update_voltage(void)
 {
-   if (source == nullptr) {
-       state.voltage_mv = 0;
-       return;
-   }
-   // cope with changed settings
-   source->set_pin(ranger._pin[state.instance]);
-   source->set_stop_pin((uint8_t)ranger._stop_pin[state.instance]);
-   source->set_settle_time((uint16_t)ranger._settle_time_ms[state.instance]);
-   if (ranger._ratiometric[state.instance]) {
-       state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
-   } else {
-       state.voltage_mv = source->voltage_average() * 1000U;
-   }
+   // if (source == nullptr) {
+   //     state.voltage_mv = 0;
+   //     return;
+   // }
+   // // cope with changed settings
+   // source->set_pin(ranger._pin[state.instance]);
+   // source->set_stop_pin((uint8_t)ranger._stop_pin[state.instance]);
+   // source->set_settle_time((uint16_t)ranger._settle_time_ms[state.instance]);
+   // if (ranger._ratiometric[state.instance]) {
+   //     state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
+   // } else {
+   //     state.voltage_mv = source->voltage_average() * 1000U;
+   // }
+    state.voltage_mv = 2300;
 }
 
 /*
@@ -85,36 +87,36 @@ void AP_RangeFinder_analog::update_voltage(void)
 void AP_RangeFinder_analog::update(void)
 {
     update_voltage();
-    float v = state.voltage_mv * 0.001f;
-    float dist_m = 0;
-    float scaling = ranger._scaling[state.instance];
-    float offset  = ranger._offset[state.instance];
-    RangeFinder::RangeFinder_Function function = (RangeFinder::RangeFinder_Function)ranger._function[state.instance].get();
-    int16_t max_distance_cm = ranger._max_distance_cm[state.instance];
+    // float v = state.voltage_mv * 0.001f;
+    // float dist_m = 0;
+    // float scaling = ranger._scaling[state.instance];
+    // float offset  = ranger._offset[state.instance];
+    // RangeFinder::RangeFinder_Function function = (RangeFinder::RangeFinder_Function)ranger._function[state.instance].get();
+    // int16_t max_distance_cm = ranger._max_distance_cm[state.instance];
 
-    switch (function) {
-    case RangeFinder::FUNCTION_LINEAR:
-        dist_m = (v - offset) * scaling;
-        break;
+    // switch (function) {
+    // case RangeFinder::FUNCTION_LINEAR:
+    //     dist_m = (v - offset) * scaling;
+    //     break;
 	  
-    case RangeFinder::FUNCTION_INVERTED:
-        dist_m = (offset - v) * scaling;
-        break;
+    // case RangeFinder::FUNCTION_INVERTED:
+    //     dist_m = (offset - v) * scaling;
+    //     break;
 
-    case RangeFinder::FUNCTION_HYPERBOLA:
-        if (v <= offset) {
-            dist_m = 0;
-        }
-        dist_m = scaling / (v - offset);
-        if (isinf(dist_m) || dist_m > max_distance_cm * 0.01f) {
-            dist_m = max_distance_cm * 0.01f;
-        }
-        break;
-    }
-    if (dist_m < 0) {
-        dist_m = 0;
-    }
-    state.distance_cm = dist_m * 100.0f;  
+    // case RangeFinder::FUNCTION_HYPERBOLA:
+    //     if (v <= offset) {
+    //         dist_m = 0;
+    //     }
+    //     dist_m = scaling / (v - offset);
+    //     if (isinf(dist_m) || dist_m > max_distance_cm * 0.01f) {
+    //         dist_m = max_distance_cm * 0.01f;
+    //     }
+    //     break;
+    // }
+    // if (dist_m < 0) {
+    //     dist_m = 0;
+    // }
+    // state.distance_cm = dist_m * 100.0f;  
 
     // update range_valid state based on distance measured
     update_status();

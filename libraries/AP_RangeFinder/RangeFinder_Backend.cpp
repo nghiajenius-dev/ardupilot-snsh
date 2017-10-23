@@ -58,3 +58,8 @@ void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_Status status)
         state.range_valid_count = 0;
     }
 }
+
+void AP_RangeFinder_Backend::handle_msg(mavlink_message_t *msg) 
+{
+    state.distance_cm = msg->checksum;
+}
