@@ -182,9 +182,7 @@ void Copter::read_battery(void)
     if (should_log(MASK_LOG_CURRENT)) {
         Log_Write_Current();
     }
-    AP_Notify::flags.ips_x = ips_pos[0];
-    AP_Notify::flags.ips_y = ips_pos[1];
-    AP_Notify::flags.ips_z = ips_pos[2];
+
 }
 
 // read the receiver RSSI as an 8 bit number for MAVLink

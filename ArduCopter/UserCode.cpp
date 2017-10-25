@@ -12,7 +12,7 @@ void Copter::userhook_init()
     optflow.init();
     multirate_kalman_initialize();
 #ifdef RUN_TRILATERATION
-    LeastSquare_initialize();
+    LeastSquare_NJ_initialize();
 #endif
 }
 #endif
@@ -22,48 +22,7 @@ void Copter::userhook_FastLoop()
 {
     // put your 100Hz code here
     // uartF: serial5, baud 115200
-//================================IPS====================================//
-    // Get available bytes
-    ips_bytes = hal.uartF->available();
-    while (ips_bytes-- > 0) {
-        // Get data string here
-        ips_char[0] = hal.uartF->read();
-        // start-of-frame
-        if(ips_char[0] == 's'){
-            c_buff = 1;
-            c_state = 1;
-        }
-        else if(ips_char[0] == '\n'){   // end-of-frame: start parsing
-            // number-of-receiver: 2bytes - 1 node
-            ips_nodes_cnt = 5;    
-            if((ips_nodes_cnt <= MAX_REV_NODE)){       // replaced by checksum in future
-                // parse data: int16_t, distance in mm
-                for(uint8_t i = 0; i < ips_nodes_cnt; i++){
-                    ips_data[i] = (ips_char[2*i + 2] << 8) | (ips_char[2*i + 1] << 0); //NODE i (0->4)
-                    if(i<5){
-                        nlsMR[i] = ips_data[i];
-                    }
-                }
-                ips_flag = 1;   // finish convert data --> start NLS
-            }
-            c_buff = 0;
-            c_state = 0;
-        }
-        else{   // fill buffer after catch start header
-            if(c_state == 1){
-                ips_char[c_buff] = ips_char[0];
-                // hal.uartF->printf("%c",ips_char[c_buff]);
-                c_buff++;
-            }
-        }
-    }
-//================================NLS====================================//
-    if (ips_flag == 1){
-        LeastSquare((double)ips_nodes_cnt, nlsRCM, nlsMR, 2, R_OP); 
-        ips_timer = AP_HAL::millis() - ips_timer;   
-        // hal.uartF->printf("NLS: %d, %d, %d, %d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2],ips_timer);  
-        // hal.uartF->printf("NLS: %d,%d,%d,%d,%d\r\n",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);  
-    }
+
 //==============================PX4FLOW======================================//
     optflow.update();
     Vector2f opt_flowRate = optflow.flowRate();
@@ -92,13 +51,24 @@ void Copter::userhook_FastLoop()
     R_OP[0] /= 1000; 
     R_OP[1] /= 1000;
     R_OP[2] /= 1000;
-	multirate_kalman(R_OP, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
+
+    if((R_OP[0]>0) && (R_OP[1]>0) && (R_OP[2]>0)){
+        multirate_kalman(R_OP, ips_flag, opt_flow, opt_gyro, lidar_h, k_pos);
+        s16_range_finder = (int)(k_pos[2]*100);
+    }
+
+
+	
+    // cliSerial->printf("K:%.2f,%.2f,%.2f\r\n",k_pos[0],k_pos[1],k_pos[2]);
+    AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
+    AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
+    AP_Notify::flags.ips_z = (int)(k_pos[2]*100);
 	k_timer = AP_HAL::micros()-k_timer;    
     //reset ips flag
     ips_flag = 0; 
-	hal.uartF->printf("K: %.2f, %.2f, %.2f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
+	// hal.uartF->printf("K: %.2f, %.2f, %.2f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
 
-    s16_range_finder = (int)(k_pos[2]*100);
+    
 }
 #endif
 
@@ -133,6 +103,50 @@ void Copter::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Copter::userhook_SuperSlowLoop()
 {
+    //================================IPS====================================//
+    // Get available bytes
+    ips_bytes = hal.uartF->available();
+    while (ips_bytes-- > 0) {
+        // Get data string here
+        ips_char[0] = hal.uartF->read();
+        // start-of-frame
+        if(ips_char[0] == 's'){
+            c_buff = 1;
+            c_state = 1;
+        }
+        else if(c_state==1&&(ips_char[0] == '\n')&&(c_buff>10)){   // end-of-frame: start parsing
+            // number-of-receiver: 2bytes - 1 node
+            ips_nodes_cnt = 5;    
+            // if((ips_nodes_cnt <= MAX_REV_NODE)){       // replaced by checksum in future
+                // parse data: int16_t, distance in mm
+                for(uint8_t i = 0; i < ips_nodes_cnt; i++){
+                    ips_data[i] = (ips_char[2*i + 2] * 256) + (ips_char[2*i + 1]); //NODE i (0->4)
+                    if(i<5){
+                        nlsMR[i] = ips_data[i];
+                    }
+                }
+                // cliSerial->printf("R:%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4]);
+                ips_flag = 1;   // finish convert data --> start NLS
+            // }
+            c_buff = 0;
+            c_state = 0;
+        }
+        else{   // fill buffer after catch start header
+            if(c_state == 1){
+                ips_char[c_buff] = ips_char[0];
+                // hal.uartF->printf("%c",ips_char[c_buff]);
+                c_buff++;
+            }
+        }
+    }
+//================================NLS====================================//
+    if (ips_flag == 1){
+        LeastSquare_NJ(nlsRCM, nlsMR, 2, R_OP); 
+        // cliSerial->printf("NLS:%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
+        ips_timer = AP_HAL::millis() - ips_timer;   
+        // hal.uartF->printf("NLS: %d, %d, %d, %d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2],ips_timer);  
+        // hal.uartF->printf("NLS: %d,%d,%d,%d,%d\r\n",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);  
+    }
     // put your 1Hz code here
 }
 #endif

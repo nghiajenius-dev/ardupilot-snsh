@@ -1,12 +1,12 @@
 /*
- * File: mldivide.h
+ * File: LeastSquare_NJ_initialize.h
  *
  * MATLAB Coder version            : 3.3
  * C/C++ source code generated on  : 25-Oct-2017 16:07:02
  */
 
-#ifndef MLDIVIDE_H
-#define MLDIVIDE_H
+#ifndef LEASTSQUARE_NJ_INITIALIZE_H
+#define LEASTSQUARE_NJ_INITIALIZE_H
 
 /* Include Files */
 #include <math.h>
@@ -17,12 +17,12 @@
 #include "LeastSquare_NJ_types.h"
 
 /* Function Declarations */
-extern void mldivide(const double A[9], const double B[3], double Y[3]);
+extern void LeastSquare_NJ_initialize(void);
 
 #endif
 
 /*
- * File trailer for mldivide.h
+ * File trailer for LeastSquare_NJ_initialize.h
  *
  * [EOF]
  */

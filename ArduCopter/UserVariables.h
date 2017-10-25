@@ -3,13 +3,13 @@
 // example variables used in Wii camera testing - replace with your own
 // variables
 #ifdef USERHOOK_VARIABLES
-#define BUFFER_FRAME_SIZE   50
+#define BUFFER_FRAME_SIZE   200
 #define MAX_REV_NODE		12
 
 // IPS
 #define RUN_TRILATERATION
 uint16_t ips_bytes;
-int16_t ips_data[MAX_REV_NODE];
+uint16_t ips_data[MAX_REV_NODE];
 char ips_char[BUFFER_FRAME_SIZE];
 // uint16_t ips_node;
 
@@ -37,7 +37,7 @@ uint32_t k_timer;
 // NLS
 double R_OP[3];
 double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
-int16_t nlsMR[5];
+uint16_t nlsMR[5];
 
 volatile uint16_t s16_range_finder = 123;
 

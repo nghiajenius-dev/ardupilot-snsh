@@ -145,10 +145,10 @@ extern "C"{
 #include "multirate_kalman_terminate.h"
 #include "multirate_kalman_initialize.h"
 
-#include "LeastSquare.h"
-#include "LeastSquare_types.h"
-#include "LeastSquare_terminate.h"
-#include "LeastSquare_initialize.h"    
+#include "LeastSquare_NJ.h"
+#include "LeastSquare_NJ_types.h"
+#include "LeastSquare_NJ_terminate.h"
+#include "LeastSquare_NJ_initialize.h"    
 }
 
 class Copter : public AP_HAL::HAL::Callbacks {
