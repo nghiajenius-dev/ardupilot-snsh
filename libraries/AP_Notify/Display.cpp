@@ -432,7 +432,7 @@ void Display::update()
 
     // max update frequency 10Hz
     static uint8_t timer = 0;
-    if (timer++ < 5) {
+    if (timer++ < 25) {
         return;
     }
     timer = 0;

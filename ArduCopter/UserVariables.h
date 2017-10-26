@@ -1,9 +1,10 @@
+#include "pid.h"
 // user defined variables
 
 // example variables used in Wii camera testing - replace with your own
 // variables
 #ifdef USERHOOK_VARIABLES
-#define BUFFER_FRAME_SIZE   200
+#define BUFFER_FRAME_SIZE   1000
 #define MAX_REV_NODE		12
 
 // IPS
@@ -41,6 +42,18 @@ uint16_t nlsMR[5];
 
 volatile uint16_t s16_range_finder = 123;
 
+Vector3f v3f_target_control;
+float target_roll = 0.0f;
+float target_pitch = 0.0f;
+bool is_armed = false;
+
+PID::PID_PARAMETERS pid_pos_x_param = {.Kp = 1.5, .Ki = 0.0, .Kd = 0.00,
+		.Ts = 0.0025, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
+PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 1.5, .Ki = 0.0, .Kd = 0.00,
+		.Ts = 0.0025, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
+
+PID pid_posx;
+PID pid_posy;
 
 // #if WII_CAMERA == 1
 // WiiCamera           ircam;

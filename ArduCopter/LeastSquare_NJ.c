@@ -53,6 +53,8 @@ void LeastSquare_NJ( double RCM[15],  uint16_t MR[5], double method,
   double j_a;
   double JtJ[9];
   double Jtf[3];
+  int16_t nls_loop;
+
   for (i0 = 0; i0 < 3; i0++) {
     R_OP[i0] = 0.0;
     Rnew[i0] = 0.0;
@@ -98,7 +100,10 @@ void LeastSquare_NJ( double RCM[15],  uint16_t MR[5], double method,
   R_OP[2] = RCM[10] - sqrt((MR[0] * MR[0] - a * a) - b_a * b_a);
   b_i = 0.0;
   r1square = 0.001;
-  while (r1square > 1.0E-6) {
+  nls_loop = 0;
+
+  while ((nls_loop <5)&&(r1square > 1.0E-4)) {
+    nls_loop = nls_loop +1;
     if (b_i == 0.0) {
       for (i0 = 0; i0 < 3; i0++) {
         Rold[i0] = R_OP[i0];

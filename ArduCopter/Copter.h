@@ -151,6 +151,8 @@ extern "C"{
 #include "LeastSquare_NJ_initialize.h"    
 }
 
+#include "pid.h"
+
 class Copter : public AP_HAL::HAL::Callbacks {
 public:
     friend class GCS_MAVLINK_Copter;

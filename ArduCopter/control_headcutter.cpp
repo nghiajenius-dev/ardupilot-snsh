@@ -35,6 +35,8 @@ bool Copter::headcutter_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::headcutter_run()
 {
+    float pid_roll, pid_pitch, error_x, error_y, x_gain = 0.1f, y_gain = 0.1f;
+
     AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;
 
@@ -110,7 +112,6 @@ void Copter::headcutter_run()
 
         // get avoidance adjusted climb rate
         target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
-
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
@@ -143,8 +144,34 @@ void Copter::headcutter_run()
         avoid.adjust_roll_pitch(target_roll, target_pitch, aparm.angle_max);
 #endif
 
+
+        //THIS IS A BIG HACK
+        error_x = -(k_pos[0]*100 - v3f_target_control.x);
+        error_y = -(k_pos[1]*100 - v3f_target_control.y);
+
+        pid_roll = pid_posx.pid_process(error_x);
+        pid_pitch = pid_posy.pid_process(error_y);
+
+        pid_roll *= x_gain;
+        pid_pitch *= y_gain;
+
+        pid_roll *= 100; // centi degree
+        pid_pitch *= 100;
+
+        if (pid_roll > 1500)
+            pid_roll = 1500;
+        if (pid_roll < -1500)
+            pid_roll = -1500;
+
+        if (pid_pitch > 1500)
+            pid_pitch = 1500;
+        
+        cliSerial->printf(": %.2f, %.2f, %.2f \n", pid_roll, error_x, target_pitch);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        //END OF HACK
+
         // call attitude controller
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        // attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
         // adjust climb rate using rangefinder
         if (rangefinder_alt_ok()) {
