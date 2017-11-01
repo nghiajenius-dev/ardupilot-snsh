@@ -40,6 +40,7 @@ uint16_t nlsMR[5];
 double sortRCM[15];
 uint16_t sortMR[5];
 uint16_t maxMR;
+bool nls_healthy;
 int c_i, c_j, c_k;
 int max_NOR, max_index;
 

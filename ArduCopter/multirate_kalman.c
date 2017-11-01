@@ -109,7 +109,7 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
     }
 
     memcpy(&p_est[0], &Q1[0], 36U * sizeof(double));
-    yaw_angle = 1.5707963267948966;
+    yaw_angle = 0;
   }
 
   /*  KALMAN */
