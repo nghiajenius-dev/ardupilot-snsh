@@ -887,6 +887,29 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: 
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
+
+    // USER_DEFINE_PARAM
+    // @Param: NEW_PARAMETER_1
+    // @DisplayName: New Parameter 1
+    // @Description: A description of my new parameter goes here
+    // @Range: -32768 32767
+    // @User: Advanced
+    GSCALAR(new_parameter_1, "NEW_PARAMETER_1", 4.0f),
+
+    // @Param: NEW_PARAMETER_2
+    // @DisplayName: New Parameter 2
+    // @Description: A description of my new parameter goes here
+    // @Range: -32768 32767
+    // @User: Advanced
+    GSCALAR(new_parameter_2, "NEW_PARAMETER_2", 0),
+
+    // @Param: NEW_PARAMETER_3
+    // @DisplayName: New Parameter 3
+    // @Description: A description of my new parameter goes here
+    // @Range: -32768 32767
+    // @User: Advanced
+    GSCALAR(new_parameter_3, "NEW_PARAMETER_3", 0),
+
     
     AP_VAREND
 };

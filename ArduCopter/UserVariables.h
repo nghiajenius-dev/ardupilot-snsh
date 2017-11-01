@@ -12,14 +12,12 @@
 uint16_t ips_bytes;
 uint16_t ips_data[MAX_REV_NODE];
 char ips_char[BUFFER_FRAME_SIZE];
-// uint16_t ips_node;
 
-double ips_pos[3] = {123,456,789};
+double ips_pos[3];
 double ips_flag;
 uint32_t ips_timer; 
 uint16_t c_buff;
 uint16_t c_state;
-uint8_t ips_nodes_cnt;
 
 // SENSORS
 float air_temperature;
@@ -39,6 +37,11 @@ uint32_t k_timer;
 double R_OP[3];
 double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
 uint16_t nlsMR[5];
+double sortRCM[15];
+uint16_t sortMR[5];
+uint16_t maxMR;
+int c_i, c_j, c_k;
+int max_NOR, max_index;
 
 volatile uint16_t s16_range_finder = 123;
 

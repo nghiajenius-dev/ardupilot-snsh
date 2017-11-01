@@ -369,6 +369,10 @@ public:
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
+        k_param_new_parameter_1, // 254
+        k_param_new_parameter_2, // 255
+        k_param_new_parameter_3, // 256
+
     };
 
     AP_Int16        format_version;
@@ -483,6 +487,12 @@ public:
     AP_Int8                 autotune_axis_bitmask;
     AP_Float                autotune_aggressiveness;
     AP_Float                autotune_min_d;
+
+    // USER_DEFINE_PARA
+    AP_Float                new_parameter_1;
+    AP_Float                new_parameter_2;
+    AP_Float                new_parameter_3;
+
 
     // Note: keep initializers here in the same order as they are declared
     // above.

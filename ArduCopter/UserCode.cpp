@@ -9,6 +9,7 @@ void Copter::userhook_init()
     c_buff = 0;     //0: temp-buf
     c_state = 0;    //0: wait-start-buff, 1: data-buffer, 2: end-buffer-->0
     ips_bytes = 0;
+    max_NOR = 5;
     optflow.init();
     multirate_kalman_initialize();
 #ifdef RUN_TRILATERATION
@@ -37,18 +38,15 @@ void Copter::userhook_FastLoop()
         }
         else if(c_state==1&&(ips_char[0] == '\n')&&(c_buff>10)){   // end-of-frame: start parsing
             // number-of-receiver: 2bytes - 1 node
-            ips_nodes_cnt = 5;    
-            // if((ips_nodes_cnt <= MAX_REV_NODE)){       // replaced by checksum in future
                 // parse data: int16_t, distance in mm
-                for(uint8_t i = 0; i < ips_nodes_cnt; i++){
-                    ips_data[i] = (ips_char[2*i + 2] * 256) + (ips_char[2*i + 1]); //NODE i (0->4)
-                    if(i<5){
-                        nlsMR[i] = ips_data[i];
-                    }
+            for(uint8_t i = 0; i < max_NOR; i++){
+                ips_data[i] = (ips_char[2*i + 2] * 256) + (ips_char[2*i + 1]); //NODE i (0->4)
+                if(i<max_NOR){
+                    nlsMR[i] = ips_data[i];
                 }
-                // cliSerial->printf("R:%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4]);
-                ips_flag = 1;   // finish convert data --> start NLS
-            // }
+            }
+            // cliSerial->printf("R:%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4]);
+            ips_flag = 1;   // finish convert data --> start NLS
             c_buff = 0;
             c_state = 0;
         }
@@ -61,9 +59,42 @@ void Copter::userhook_FastLoop()
         }
     }
 //================================NLS====================================//
+  // ips_flag = 1;
+  // // [121.8, 120.4, 185.4, 185.5, 92.9];
+  // nlsMR[0] = 1218;
+  // nlsMR[1] = 1204;
+  // nlsMR[2] = 1854;
+  // nlsMR[3] = 1855;
+  // nlsMR[4] = 929;
+
+maxMR = 0;
+for(c_i = 0; c_i < max_NOR; c_i++){
+    if(maxMR < nlsMR[c_i]){
+        maxMR = nlsMR[c_i];
+        max_index = c_i;
+    }
+    sortMR[c_i] = nlsMR[c_i];
+}
+for(c_i = 0; c_i < 15; c_i++){
+    sortRCM[c_i] = nlsRCM[c_i];
+}
+if(max_index < 4){
+    sortMR[4] = nlsMR[max_index];
+    sortMR[max_index] = nlsMR[4];
+    for(c_i = 0; c_i < 3; c_i++){
+        sortRCM[4 + 5*c_i] = nlsRCM[max_index + 5*c_i];
+        sortRCM[max_index + 5*c_i] = nlsRCM[4 + 5*c_i];
+    }
+
+}
+ 
+cliSerial->printf("D:%d,%d,%d,%d,%d\r\n",sortMR[0],sortMR[1],sortMR[2],sortMR[3],sortMR[4]);
+
+
     if (ips_flag == 1){
         if((nlsMR[0]<3500)&&(nlsMR[1]<3500)&&(nlsMR[2]<3500)&&(nlsMR[3]<3500)&&(nlsMR[4]<3500)){
-            LeastSquare_NJ(nlsRCM, nlsMR, 2, R_OP); 
+            LeastSquare_NJ(g.new_parameter_1,sortRCM, sortMR, 2, R_OP); 
+            cliSerial->printf("NLS:%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
         }
         else
            ips_flag = 0; 
