@@ -177,6 +177,8 @@ void Copter::userhook_FastLoop()
         cliSerial->printf("TARGET_POS: %.2f, %.2f \n",v3f_target_control.x , v3f_target_control.y);
     } else if (!motors->armed() && is_armed ) is_armed = false;
     
+    //DATA Flash
+    Log_Write_NLS_KAL(R_OP[0], R_OP[1], k_pos[0], k_pos[1]);
 
 }
 #endif

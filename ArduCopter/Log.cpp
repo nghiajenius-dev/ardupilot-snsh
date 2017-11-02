@@ -251,6 +251,20 @@ void Copter::Log_Write_Optflow()
  #endif     // OPTFLOW == ENABLED
 }
 
+void Copter::Log_Write_NLS_KAL(float x1, float y1, float x2, float y2)
+{
+    struct log_Optflow pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
+        time_us         : AP_HAL::micros64(),
+        surface_quality : 255,
+        flow_x          : x1,
+        flow_y          : y1,
+        body_x          : x2,
+        body_y          : y2
+    };
+    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+}
+
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
