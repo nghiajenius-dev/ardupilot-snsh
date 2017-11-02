@@ -740,7 +740,7 @@ private:
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     void Log_Write_Optflow();
-    void Log_Write_NLS_KAL(float x1, float y1, float x2, float y2);
+    void Log_Write_NLS_KAL(float x1, float y1, float x2, float y2, float z1, float z2);
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();

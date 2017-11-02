@@ -178,7 +178,7 @@ void Copter::userhook_FastLoop()
     } else if (!motors->armed() && is_armed ) is_armed = false;
     
     //DATA Flash
-    Log_Write_NLS_KAL(R_OP[0], R_OP[1], k_pos[0], k_pos[1]);
+    Log_Write_NLS_KAL(R_OP[0], R_OP[1], k_pos[0], k_pos[1], R_OP[2], k_pos[2]);
 
 }
 #endif
