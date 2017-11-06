@@ -1,9 +1,8 @@
 #ifndef PID_H
 #define PID_H
+#pragma once
 
-
-class PID
-{   
+class PID {
 public:
     typedef struct
     {

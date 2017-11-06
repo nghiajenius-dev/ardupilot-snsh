@@ -2,7 +2,7 @@
  * File: LeastSquare_NJ.c
  *
  * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 31-Oct-2017 23:38:14
+ * C/C++ source code generated on  : 06-Nov-2017 15:15:42
  */
 
 /* Include Files */
@@ -13,351 +13,214 @@
 /* Function Definitions */
 
 /*
- * NOR = 5
- *  ls_NOR = 4 or 5
+ * NOR: max number of receivers = 5
+ *  max_nls_NOR = NOR for LLS/NLS = 4
  *  RCM: Receiver Coordinate Matrix [3,NOR]
  *  MR: Measured Range [1,NOR]
  *  method: 1-lls, 2-nls
- *  persistent NOR
- * Arguments    : double ls_NOR
- *                const double RCM[15]
- *                const double MR[5]
- *                double method
+ *  persistent orderTemp max_nls_NOR
+ * Arguments    : short NOR
+ *                double updateMR[5]
+ *                double updateRCM[15]
+ *                short method
  *                double R_OP[3]
  * Return Type  : void
  */
-void LeastSquare_NJ(double ls_NOR, double RCM[15], uint16_t MR[5],
-                    double method, double R_OP[3])
+void LeastSquare_NJ(short NOR, double updateMR[5], double updateRCM[15], short
+                    method, double R_OP[3])
 {
-  int i0;
-  double Rnew[3];
-  double r1square;
   int i;
-  double JtJ[9];
-  double Rold[3];
-  double X[3];
+  double lsRCM[12];
+  double lsMR[4];
+  int i0;
+  short b_i;
+  short j;
+  double r1square;
+  int k;
   double a;
-  double A[12];
+  double A[9];
+  double b_A[9];
+  double Rold[3];
+  double b[3];
+  double scale;
   double b_a;
-  double c_a;
-  int i_nls;
-  double b[4];
-  double R_LLS[3];
-  double b_i;
+  double R_est[3];
+  int i_count_nls;
+  double x;
+  double y;
+  double z;
   double dv0[3];
-  double f2;
-  double f3;
-  double f4;
-  double f5;
-  double d_a;
-  double e_a;
-  double f_a;
-  double g_a;
-  double h_a;
-  double i_a;
-  double j_a;
+
+  /*  last node */
+  for (i = 0; i < 4; i++) {
+    lsMR[i] = 0.0;
+  }
+
+  memset(&lsRCM[0], 0, 12U * sizeof(double));
   for (i0 = 0; i0 < 3; i0++) {
     R_OP[i0] = 0.0;
-    Rnew[i0] = 0.0;
   }
 
-  /* Sort estimated distances in ascending order */
-  /*  for i = 1:(NOR-1) */
-  /*     for j = (NOR):-1:(i+1) */
-  /*         if MR(j) < MR(j-1) */
-  /*             sort_temp1 = MR(j); */
-  /*             MR(j) = MR(j-1); */
-  /*             MR(j-1) = sort_temp1; */
-  /*              */
-  /*             sort_temp2 = RCM(j,:); */
-  /*             RCM(j,:) = RCM(j-1,:); */
-  /*             RCM(j-1,:) = sort_temp2; */
-  /*         end */
-  /*     end */
-  /*  end */
-  /*  MR */
-  /*  LLS */
-  r1square = MR[0] * MR[0];
-  for (i = 0; i < 4; i++) {
-    for (i0 = 0; i0 < 3; i0++) {
-      A[i + (i0 << 2)] = RCM[(i + 5 * i0) + 1] - RCM[5 * i0];
-    }
-
-    a = RCM[i + 1] - RCM[0];
-    b_a = RCM[i + 6] - RCM[5];
-    c_a = RCM[i + 11] - RCM[10];
-    b[i] = 0.5 * ((r1square - MR[i + 1] * MR[i + 1]) + ((a * a + b_a * b_a) +
-      c_a * c_a));
-  }
-
-  for (i0 = 0; i0 < 3; i0++) {
-    for (i = 0; i < 3; i++) {
-      JtJ[i0 + 3 * i] = 0.0;
-      for (i_nls = 0; i_nls < 4; i_nls++) {
-        JtJ[i0 + 3 * i] += A[i_nls + (i0 << 2)] * A[i_nls + (i << 2)];
+  /*  orderTemp = 0; */
+  /*  sort distance */
+  if (NOR > 4) {
+    for (b_i = 1; b_i <= NOR - 2; b_i++) {
+      for (j = (short)(NOR - 1); j >= b_i + 1; j--) {
+        if (updateMR[j - 1] < updateMR[j - 2]) {
+          r1square = updateMR[j - 1];
+          updateMR[j - 1] = updateMR[j - 2];
+          updateMR[j - 2] = r1square;
+          for (k = 0; k < 3; k++) {
+            r1square = updateRCM[(j + 5 * k) - 1];
+            updateRCM[(j + 5 * k) - 1] = updateRCM[(j + 5 * k) - 2];
+            updateRCM[(j + 5 * k) - 2] = r1square;
+          }
+        }
       }
     }
 
-    Rold[i0] = 0.0;
-    for (i = 0; i < 4; i++) {
-      Rold[i0] += A[i + (i0 << 2)] * b[i];
+    /*  change NOR -> 4 */
+  }
+
+  /*  Save to lsMR, lsRCM */
+  /* NOR = 4 */
+  /*  Update center node */
+  lsMR[3] = updateMR[NOR - 1];
+  for (i = 0; i < 3; i++) {
+    lsMR[i] = updateMR[i];
+    for (k = 0; k < 3; k++) {
+      lsRCM[i + (k << 2)] = updateRCM[i + 5 * k];
     }
+
+    lsRCM[3 + (i << 2)] = updateRCM[(NOR + 5 * i) - 1];
   }
 
-  mldivide(JtJ, Rold, X);
+  /*  lsMR */
+  /*  lsRCM */
+  /*  Run LLS(max_nls_NOR=4, lsMR,lsRCM) */
+  r1square = lsMR[0] * lsMR[0];
+  for (i = 0; i < 3; i++) {
+    for (k = 0; k < 3; k++) {
+      A[i + 3 * k] = lsRCM[(i + (k << 2)) + 1] - lsRCM[k << 2];
+    }
 
-  /*  linear least square solution */
+    a = lsRCM[i + 1] - lsRCM[0];
+    scale = lsRCM[i + 5] - lsRCM[4];
+    b_a = lsRCM[i + 9] - lsRCM[8];
+    b[i] = 0.5 * ((r1square - lsMR[i + 1] * lsMR[i + 1]) + ((a * a + scale *
+      scale) + b_a * b_a));
+  }
+
+  /*  LLS solution */
   for (i0 = 0; i0 < 3; i0++) {
-    R_LLS[i0] = X[i0] + RCM[5 * i0];
+    Rold[i0] = 0.0;
+    for (k = 0; k < 3; k++) {
+      b_A[i0 + 3 * k] = 0.0;
+      for (i = 0; i < 3; i++) {
+        b_A[i0 + 3 * k] += A[i + 3 * i0] * A[i + 3 * k];
+      }
+
+      Rold[i0] += A[k + 3 * i0] * b[k];
+    }
+
+    R_est[i0] = 0.0;
   }
 
-  /*   tempz = (z_Transmitter - z_NearestReceiver)^2 */
-  a = R_LLS[0] - RCM[0];
-  b_a = R_LLS[1] - RCM[5];
-  R_LLS[2] = RCM[10] - sqrt((MR[0] * MR[0] - a * a) - b_a * b_a);
-  if (method == 1.0) {
+  mldivide(b_A, Rold, b);
+
+  /*  Estimated position coordinate */
+  for (i = 0; i < 2; i++) {
+    R_est[i] = b[i] + lsRCM[i << 2];
+  }
+
+  a = R_est[0] - lsRCM[0];
+  scale = R_est[1] - lsRCM[4];
+  r1square = (lsMR[0] * lsMR[0] - a * a) - scale * scale;
+  if (r1square >= 0.0) {
+    R_est[2] = lsRCM[8] - sqrt(r1square);
+  }
+
+  if (method == 1) {
     for (i0 = 0; i0 < 3; i0++) {
-      R_OP[i0] = R_LLS[i0];
+      R_OP[i0] = R_est[i0];
     }
   } else {
-    if (method == 2.0) {
-      b_i = 0.0;
+    if (method == 2) {
+      /*     %% NLS(max_nls_NOR=4, lsMR,lsRCM) */
+      i_count_nls = 0;
       r1square = 0.001;
-      i_nls = 0;
-      while ((r1square > 1.0E-6) && (i_nls < 5)) {
-        i_nls++;
-        if (b_i == 0.0) {
-          for (i0 = 0; i0 < 3; i0++) {
-            Rold[i0] = R_LLS[i0];
+      memset(&A[0], 0, 9U * sizeof(double));
+      for (i = 0; i < 3; i++) {
+        b[i] = 0.0;
+      }
+
+      while ((r1square > 1.0E-6) && (i_count_nls <= 15)) {
+        i_count_nls++;
+        if (i_count_nls == 1) {
+          for (i = 0; i < 3; i++) {
+            Rold[i] = R_est[i];
           }
         } else {
           for (i0 = 0; i0 < 3; i0++) {
-            Rold[i0] = Rnew[i0];
+            Rold[i0] = R_OP[i0];
           }
         }
 
-        memset(&JtJ[0], 0, 9U * sizeof(double));
-        for (i = 0; i < 3; i++) {
-          X[i] = 0.0;
+        x = Rold[0];
+        y = Rold[1];
+        z = Rold[2];
+        for (i = 0; i < 4; i++) {
+          a = x - lsRCM[i];
+          scale = y - lsRCM[4 + i];
+          b_a = z - lsRCM[8 + i];
+          r1square = sqrt((a * a + scale * scale) + b_a * b_a) - lsMR[i];
+
+          /* ----------------------------JtJ---------------------------- */
+          a = r1square + lsMR[i];
+          A[0] += (x - lsRCM[i]) * (x - lsRCM[i]) / (a * a);
+          a = r1square + lsMR[i];
+          A[3] += (x - lsRCM[i]) * (y - lsRCM[4 + i]) / (a * a);
+          a = r1square + lsMR[i];
+          A[6] += (x - lsRCM[i]) * (z - lsRCM[8 + i]) / (a * a);
+          a = r1square + lsMR[i];
+          A[4] += (y - lsRCM[4 + i]) * (y - lsRCM[4 + i]) / (a * a);
+          a = r1square + lsMR[i];
+          A[7] += (y - lsRCM[4 + i]) * (z - lsRCM[8 + i]) / (a * a);
+          a = r1square + lsMR[i];
+          A[8] += (z - lsRCM[8 + i]) * (z - lsRCM[8 + i]) / (a * a);
+
+          /* ----------------------------Jtf---------------------------- */
+          b[0] += (x - lsRCM[i]) * r1square / (r1square + lsMR[i]);
+          b[1] += (y - lsRCM[4 + i]) * r1square / (r1square + lsMR[i]);
+          b[2] += (z - lsRCM[8 + i]) * r1square / (r1square + lsMR[i]);
         }
 
-        if (ls_NOR == 4.0) {
-          a = Rold[0] - RCM[0];
-          b_a = Rold[1] - RCM[5];
-          c_a = Rold[2] - RCM[10];
-          r1square = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[0];
-          a = Rold[0] - RCM[1];
-          b_a = Rold[1] - RCM[6];
-          c_a = Rold[2] - RCM[11];
-          f2 = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[1];
-          a = Rold[0] - RCM[2];
-          b_a = Rold[1] - RCM[7];
-          c_a = Rold[2] - RCM[12];
-          f3 = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[2];
-          a = Rold[0] - RCM[3];
-          b_a = Rold[1] - RCM[8];
-          c_a = Rold[2] - RCM[13];
-          f4 = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[3];
-          a = Rold[0] - RCM[0];
-          b_a = r1square + MR[0];
-          c_a = Rold[0] - RCM[1];
-          d_a = f2 + MR[1];
-          e_a = Rold[0] - RCM[2];
-          f_a = f3 + MR[2];
-          g_a = Rold[0] - RCM[3];
-          h_a = f4 + MR[3];
-          JtJ[0] = ((a * a / (b_a * b_a) + c_a * c_a / (d_a * d_a)) + e_a * e_a /
-                    (f_a * f_a)) + g_a * g_a / (h_a * h_a);
-          a = r1square + MR[0];
-          b_a = f2 + MR[1];
-          c_a = f3 + MR[2];
-          d_a = f4 + MR[3];
-          JtJ[3] = (((Rold[0] - RCM[0]) * (Rold[1] - RCM[5]) / (a * a) + (Rold[0]
-                      - RCM[1]) * (Rold[1] - RCM[6]) / (b_a * b_a)) + (Rold[0] -
-                     RCM[2]) * (Rold[1] - RCM[7]) / (c_a * c_a)) + (Rold[0] -
-            RCM[3]) * (Rold[1] - RCM[8]) / (d_a * d_a);
-          a = r1square + MR[0];
-          b_a = f2 + MR[1];
-          c_a = f3 + MR[2];
-          d_a = f4 + MR[3];
-          JtJ[6] = (((Rold[0] - RCM[0]) * (Rold[2] - RCM[10]) / (a * a) + (Rold
-                      [0] - RCM[1]) * (Rold[2] - RCM[11]) / (b_a * b_a)) +
-                    (Rold[0] - RCM[2]) * (Rold[2] - RCM[12]) / (c_a * c_a)) +
-            (Rold[0] - RCM[3]) * (Rold[2] - RCM[13]) / (d_a * d_a);
-          JtJ[1] = JtJ[3];
-          a = Rold[1] - RCM[5];
-          b_a = r1square + MR[0];
-          c_a = Rold[1] - RCM[6];
-          d_a = f2 + MR[1];
-          e_a = Rold[1] - RCM[7];
-          f_a = f3 + MR[2];
-          g_a = Rold[1] - RCM[8];
-          h_a = f4 + MR[3];
-          JtJ[4] = ((a * a / (b_a * b_a) + c_a * c_a / (d_a * d_a)) + e_a * e_a /
-                    (f_a * f_a)) + g_a * g_a / (h_a * h_a);
-          a = r1square + MR[0];
-          b_a = f2 + MR[1];
-          c_a = f3 + MR[2];
-          d_a = f4 + MR[3];
-          JtJ[7] = (((Rold[1] - RCM[5]) * (Rold[2] - RCM[10]) / (a * a) + (Rold
-                      [1] - RCM[6]) * (Rold[2] - RCM[11]) / (b_a * b_a)) +
-                    (Rold[1] - RCM[7]) * (Rold[2] - RCM[12]) / (c_a * c_a)) +
-            (Rold[1] - RCM[8]) * (Rold[2] - RCM[13]) / (d_a * d_a);
-          JtJ[2] = JtJ[6];
-          JtJ[5] = JtJ[7];
-          a = Rold[2] - RCM[10];
-          b_a = r1square + MR[0];
-          c_a = Rold[2] - RCM[11];
-          d_a = f2 + MR[1];
-          e_a = Rold[2] - RCM[12];
-          f_a = f3 + MR[2];
-          g_a = Rold[2] - RCM[13];
-          h_a = f4 + MR[3];
-          JtJ[8] = ((a * a / (b_a * b_a) + c_a * c_a / (d_a * d_a)) + e_a * e_a /
-                    (f_a * f_a)) + g_a * g_a / (h_a * h_a);
-          X[0] = (((Rold[0] - RCM[0]) * r1square / (r1square + MR[0]) + (Rold[0]
-                    - RCM[1]) * f2 / (f2 + MR[1])) + (Rold[0] - RCM[2]) * f3 /
-                  (f3 + MR[2])) + (Rold[0] - RCM[3]) * f4 / (f4 + MR[3]);
-          X[1] = (((Rold[1] - RCM[5]) * r1square / (r1square + MR[0]) + (Rold[1]
-                    - RCM[6]) * f2 / (f2 + MR[1])) + (Rold[1] - RCM[7]) * f3 /
-                  (f3 + MR[2])) + (Rold[1] - RCM[8]) * f4 / (f4 + MR[3]);
-          X[2] = (((Rold[2] - RCM[10]) * r1square / (r1square + MR[0]) + (Rold[2]
-                    - RCM[11]) * f2 / (f2 + MR[1])) + (Rold[2] - RCM[12]) * f3 /
-                  (f3 + MR[2])) + (Rold[2] - RCM[13]) * f4 / (f4 + MR[3]);
-        } else {
-          if (ls_NOR == 5.0) {
-            a = Rold[0] - RCM[0];
-            b_a = Rold[1] - RCM[5];
-            c_a = Rold[2] - RCM[10];
-            r1square = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[0];
-            a = Rold[0] - RCM[1];
-            b_a = Rold[1] - RCM[6];
-            c_a = Rold[2] - RCM[11];
-            f2 = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[1];
-            a = Rold[0] - RCM[2];
-            b_a = Rold[1] - RCM[7];
-            c_a = Rold[2] - RCM[12];
-            f3 = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[2];
-            a = Rold[0] - RCM[3];
-            b_a = Rold[1] - RCM[8];
-            c_a = Rold[2] - RCM[13];
-            f4 = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[3];
-            a = Rold[0] - RCM[4];
-            b_a = Rold[1] - RCM[9];
-            c_a = Rold[2] - RCM[14];
-            f5 = sqrt((a * a + b_a * b_a) + c_a * c_a) - MR[4];
-            a = Rold[0] - RCM[0];
-            b_a = r1square + MR[0];
-            c_a = Rold[0] - RCM[1];
-            d_a = f2 + MR[1];
-            e_a = Rold[0] - RCM[2];
-            f_a = f3 + MR[2];
-            g_a = Rold[0] - RCM[3];
-            h_a = f4 + MR[3];
-            i_a = Rold[0] - RCM[4];
-            j_a = f5 + MR[4];
-            JtJ[0] = (((a * a / (b_a * b_a) + c_a * c_a / (d_a * d_a)) + e_a *
-                       e_a / (f_a * f_a)) + g_a * g_a / (h_a * h_a)) + i_a * i_a
-              / (j_a * j_a);
-            a = r1square + MR[0];
-            b_a = f2 + MR[1];
-            c_a = f3 + MR[2];
-            d_a = f4 + MR[3];
-            e_a = f5 + MR[4];
-            JtJ[3] = ((((Rold[0] - RCM[0]) * (Rold[1] - RCM[5]) / (a * a) +
-                        (Rold[0] - RCM[1]) * (Rold[1] - RCM[6]) / (b_a * b_a)) +
-                       (Rold[0] - RCM[2]) * (Rold[1] - RCM[7]) / (c_a * c_a)) +
-                      (Rold[0] - RCM[3]) * (Rold[1] - RCM[8]) / (d_a * d_a)) +
-              (Rold[0] - RCM[4]) * (Rold[1] - RCM[9]) / (e_a * e_a);
-            a = r1square + MR[0];
-            b_a = f2 + MR[1];
-            c_a = f3 + MR[2];
-            d_a = f4 + MR[3];
-            e_a = f5 + MR[4];
-            JtJ[6] = ((((Rold[0] - RCM[0]) * (Rold[2] - RCM[10]) / (a * a) +
-                        (Rold[0] - RCM[1]) * (Rold[2] - RCM[11]) / (b_a * b_a))
-                       + (Rold[0] - RCM[2]) * (Rold[2] - RCM[12]) / (c_a * c_a))
-                      + (Rold[0] - RCM[3]) * (Rold[2] - RCM[13]) / (d_a * d_a))
-              + (Rold[0] - RCM[4]) * (Rold[2] - RCM[14]) / (e_a * e_a);
-            JtJ[1] = JtJ[3];
-            a = Rold[1] - RCM[5];
-            b_a = r1square + MR[0];
-            c_a = Rold[1] - RCM[6];
-            d_a = f2 + MR[1];
-            e_a = Rold[1] - RCM[7];
-            f_a = f3 + MR[2];
-            g_a = Rold[1] - RCM[8];
-            h_a = f4 + MR[3];
-            i_a = Rold[1] - RCM[9];
-            j_a = f5 + MR[4];
-            JtJ[4] = (((a * a / (b_a * b_a) + c_a * c_a / (d_a * d_a)) + e_a *
-                       e_a / (f_a * f_a)) + g_a * g_a / (h_a * h_a)) + i_a * i_a
-              / (j_a * j_a);
-            a = r1square + MR[0];
-            b_a = f2 + MR[1];
-            c_a = f3 + MR[2];
-            d_a = f4 + MR[3];
-            e_a = f5 + MR[4];
-            JtJ[7] = ((((Rold[1] - RCM[5]) * (Rold[2] - RCM[10]) / (a * a) +
-                        (Rold[1] - RCM[6]) * (Rold[2] - RCM[11]) / (b_a * b_a))
-                       + (Rold[1] - RCM[7]) * (Rold[2] - RCM[12]) / (c_a * c_a))
-                      + (Rold[1] - RCM[8]) * (Rold[2] - RCM[13]) / (d_a * d_a))
-              + (Rold[1] - RCM[9]) * (Rold[2] - RCM[14]) / (e_a * e_a);
-            JtJ[2] = JtJ[6];
-            JtJ[5] = JtJ[7];
-            a = Rold[2] - RCM[10];
-            b_a = r1square + MR[0];
-            c_a = Rold[2] - RCM[11];
-            d_a = f2 + MR[1];
-            e_a = Rold[2] - RCM[12];
-            f_a = f3 + MR[2];
-            g_a = Rold[2] - RCM[13];
-            h_a = f4 + MR[3];
-            i_a = Rold[2] - RCM[14];
-            j_a = f5 + MR[4];
-            JtJ[8] = (((a * a / (b_a * b_a) + c_a * c_a / (d_a * d_a)) + e_a *
-                       e_a / (f_a * f_a)) + g_a * g_a / (h_a * h_a)) + i_a * i_a
-              / (j_a * j_a);
-            X[0] = ((((Rold[0] - RCM[0]) * r1square / (r1square + MR[0]) +
-                      (Rold[0] - RCM[1]) * f2 / (f2 + MR[1])) + (Rold[0] - RCM[2])
-                     * f3 / (f3 + MR[2])) + (Rold[0] - RCM[3]) * f4 / (f4 + MR[3]))
-              + (Rold[0] - RCM[4]) * f5 / (f5 + MR[4]);
-            X[1] = ((((Rold[1] - RCM[5]) * r1square / (r1square + MR[0]) +
-                      (Rold[1] - RCM[6]) * f2 / (f2 + MR[1])) + (Rold[1] - RCM[7])
-                     * f3 / (f3 + MR[2])) + (Rold[1] - RCM[8]) * f4 / (f4 + MR[3]))
-              + (Rold[1] - RCM[9]) * f5 / (f5 + MR[4]);
-            X[2] = ((((Rold[2] - RCM[10]) * r1square / (r1square + MR[0]) +
-                      (Rold[2] - RCM[11]) * f2 / (f2 + MR[1])) + (Rold[2] - RCM
-                      [12]) * f3 / (f3 + MR[2])) + (Rold[2] - RCM[13]) * f4 /
-                    (f4 + MR[3])) + (Rold[2] - RCM[14]) * f5 / (f5 + MR[4]);
-          }
-        }
-
-        mldivide(JtJ, X, dv0);
+        /* ----------------------------JtJ---------------------------- */
+        A[1] = A[3];
+        A[2] = A[6];
+        A[5] = A[7];
+        mldivide(A, b, dv0);
         r1square = 0.0;
-        f2 = 2.2250738585072014E-308;
-        for (i = 0; i < 3; i++) {
-          f3 = Rold[i] - dv0[i];
-          f4 = fabs(f3 - Rold[i]);
-          if (f4 > f2) {
-            f5 = f2 / f4;
-            r1square = 1.0 + r1square * f5 * f5;
-            f2 = f4;
+        scale = 2.2250738585072014E-308;
+        for (k = 0; k < 3; k++) {
+          x = Rold[k] - dv0[k];
+          y = fabs(x - Rold[k]);
+          if (y > scale) {
+            z = scale / y;
+            r1square = 1.0 + r1square * z * z;
+            scale = y;
           } else {
-            f5 = f4 / f2;
-            r1square += f5 * f5;
+            z = y / scale;
+            r1square += z * z;
           }
 
-          Rnew[i] = f3;
+          R_OP[k] = x;
         }
 
-        r1square = f2 * sqrt(r1square);
-        b_i++;
+        r1square = scale * sqrt(r1square);
       }
 
-      for (i0 = 0; i0 < 3; i0++) {
-        R_OP[i0] = Rnew[i0];
-      }
+      /*      R_est = Rnew; */
     }
   }
 }

@@ -2,7 +2,7 @@
  * File: LeastSquare_NJ_initialize.h
  *
  * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 25-Oct-2017 16:07:02
+ * C/C++ source code generated on  : 06-Nov-2017 15:15:42
  */
 
 #ifndef LEASTSQUARE_NJ_INITIALIZE_H

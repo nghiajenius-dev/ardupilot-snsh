@@ -146,28 +146,30 @@ void Copter::headcutter_run()
 
 
         //THIS IS A BIG HACK
-        error_x = -(k_pos[0]*100 - v3f_target_control.x);
+        error_x = -(k_pos[0]*100 - v3f_target_control.x);   //cm
         error_y = -(k_pos[1]*100 - v3f_target_control.y);
 
-        pid_roll = pid_posx.pid_process(error_x);
+        pid_roll = pid_posx.pid_process(error_x);           //Uc: control angle [degree]
         pid_pitch = pid_posy.pid_process(error_y);
 
-        pid_roll *= x_gain;
-        pid_pitch *= y_gain;
+        // pid_roll *= x_gain;
+        // pid_pitch *= y_gain;
 
         pid_roll *= 100; // centi degree
         pid_pitch *= 100;
 
-        if (pid_roll > 1500)
-            pid_roll = 1500;
-        if (pid_roll < -1500)
-            pid_roll = -1500;
+        if (pid_roll > 1200)    //limit 15 degree
+            pid_roll = 1200;
+        if (pid_roll < -1200)
+            pid_roll = -1200;
 
-        if (pid_pitch > 1500)
-            pid_pitch = 1500;
+        if (pid_pitch > 1200)
+            pid_pitch = 1200;
+        if (pid_pitch < -1200)
+            pid_pitch = -1200;
         
-        cliSerial->printf(": %.2f, %.2f, %.2f \n", pid_roll, error_x, target_pitch);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        cliSerial->printf(": %.2f, %.2f, %.2f, %.2f \n", pid_roll, error_x, pid_pitch, error_y);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
         //END OF HACK
 
         // call attitude controller

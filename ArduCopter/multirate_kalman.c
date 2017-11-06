@@ -14,7 +14,6 @@
 static double x_est[6];
 static boolean_T x_est_not_empty;
 static double p_est[36];
-static double yaw_angle;
 static double pre_lidar_h;
 
 /* Function Definitions */
@@ -32,7 +31,7 @@ static double pre_lidar_h;
  */
 void multirate_kalman( double ips_pos[3], double ips_flag,  double
                       opt_flow[2],  double opt_gyro[3], double lidar_h,
-                      double k_pos[3])
+                      double k_pos[3], double yaw_angle)
 {
   int i;
   int jp;
@@ -109,7 +108,7 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
     }
 
     memcpy(&p_est[0], &Q1[0], 36U * sizeof(double));
-    yaw_angle = 0;
+    // yaw_angle = 0;
   }
 
   /*  KALMAN */
@@ -141,7 +140,7 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
     v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2]);
 
     /* [m/s] */
-    yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;
+    // yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;
 
     /* [rad] */
     A = lidar_h - pre_lidar_h;
@@ -304,7 +303,7 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
     v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2]);
 
     /* [m/s] */
-    yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;
+    // yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;
 
     /* [rad] */
     A = lidar_h - pre_lidar_h;

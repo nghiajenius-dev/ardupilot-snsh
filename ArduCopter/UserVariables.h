@@ -4,8 +4,8 @@
 // example variables used in Wii camera testing - replace with your own
 // variables
 #ifdef USERHOOK_VARIABLES
-#define BUFFER_FRAME_SIZE   1000
-#define MAX_REV_NODE		12
+#define BUFFER_FRAME_SIZE   500
+#define MAX_REV_NODE		5
 
 // IPS
 #define RUN_TRILATERATION
@@ -32,17 +32,26 @@ double opt_gyro[3];
 double lidar_h;
 double k_pos[3];
 uint32_t k_timer;
+double ins_att[3];		//roll, pitch, yaw
+double yaw_angle;		//[rad]
+double frame_yaw_offset;
 
 // NLS
+const double calib_a[5] = { 0.8641, 0.8672, 0.8641, 0.8652, 0.8649 };      // CD->G
+const double calib_k[5] = { 4.891, 3.848, 5.756, 4.71, 5.226 };             // CD->G
 double R_OP[3];
-double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
-uint16_t nlsMR[5];
-double sortRCM[15];
-uint16_t sortMR[5];
-uint16_t maxMR;
+const double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
+double nlsMR[5];
+double tempRCM[15];
+double tempMR[5];
+int err_cnt;
+
 bool nls_healthy;
-int c_i, c_j, c_k;
-int max_NOR, max_index;
+// double sortRCM[15];
+// uint16_t sortMR[5];
+// uint16_t maxMR;
+// int c_i, c_j, c_k;
+// int max_NOR, max_index;
 
 volatile uint16_t s16_range_finder = 123;
 
@@ -51,10 +60,10 @@ float target_roll = 0.0f;
 float target_pitch = 0.0f;
 bool is_armed = false;
 
-PID::PID_PARAMETERS pid_pos_x_param = {.Kp = 1.5, .Ki = 0.0, .Kd = 0.00,
-		.Ts = 0.0025, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
-PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 1.5, .Ki = 0.0, .Kd = 0.00,
-		.Ts = 0.0025, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
+PID::PID_PARAMETERS pid_pos_x_param = {.Kp = 1.2, .Ki = 0.0, .Kd = 0.05,
+		.Ts = 0.01, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
+PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 1.2, .Ki = 0.0, .Kd = 0.05,
+		.Ts = 0.01, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
 
 PID pid_posx;
 PID pid_posy;
