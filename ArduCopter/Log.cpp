@@ -222,51 +222,63 @@ struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t surface_quality;
-    float flow_x;
-    float flow_y;
-    float body_x;
-    float body_y;
-    float posz;
-    float kalz;
+    float    us_x;
+    float    us_y;
+    float    us_z;
+    float    new_us;          
+    float    opt_flow_x;   
+    float    opt_flow_y;    
+    float    opt_gyro_x;    
+    float    opt_gyro_y;    
+    float    opt_yaw;       
+    float    kalman_x;     
+    float    kalman_y;      
+    float    kalman_z; 
 };
 
 // Write an optical flow packet
-void Copter::Log_Write_Optflow()
-{
- #if OPTFLOW == ENABLED
-    // exit immediately if not enabled
-    if (!optflow.enabled()) {
-        return;
-    }
-    const Vector2f &flowRate = optflow.flowRate();
-    const Vector2f &bodyRate = optflow.bodyRate();
-    struct log_Optflow pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
-        time_us         : AP_HAL::micros64(),
-        surface_quality : optflow.quality(),
-        flow_x          : flowRate.x,
-        flow_y          : flowRate.y,
-        body_x          : bodyRate.x,
-        body_y          : bodyRate.y,
-        posz            : 0.0,
-        kalz            : 0.0
-    };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
- #endif     // OPTFLOW == ENABLED
-}
+// void Copter::Log_Write_Optflow()
+// {
+//  #if OPTFLOW == ENABLED
+//     // exit immediately if not enabled
+//     if (!optflow.enabled()) {
+//         return;
+//     }
+//     const Vector2f &flowRate = optflow.flowRate();
+//     const Vector2f &bodyRate = optflow.bodyRate();
+//     struct log_Optflow pkt = {
+//         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
+//         time_us         : AP_HAL::micros64(),
+//         surface_quality : optflow.quality(),
+//         flow_x          : flowRate.x,
+//         flow_y          : flowRate.y,
+//         body_x          : bodyRate.x,
+//         body_y          : bodyRate.y,
+//         posz            : 0.0,
+//         kalz            : 0.0
+//     };
+//     DataFlash.WriteBlock(&pkt, sizeof(pkt));
+//  #endif     // OPTFLOW == ENABLED
+// }
 
-void Copter::Log_Write_NLS_KAL(float x1, float y1, float x2, float y2, float z1, float z2)
+void Copter::Log_Write_NLS_KAL( float us_x, float us_y, float us_z,float new_us,float opt_flow_x, float opt_flow_y,float opt_gyro_x, float opt_gyro_y, float opt_yaw, float kalman_x, float kalman_y, float kalman_z)
 {
     struct log_Optflow pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
         time_us         : AP_HAL::micros64(),
         surface_quality : 255,
-        flow_x          : x1,
-        flow_y          : y1,
-        body_x          : x2,
-        body_y          : y2,
-        posz            : z1,
-        kalz            : z2
+        us_x          : us_x,
+        us_y          : us_y,
+        us_z          : us_z,
+        new_us        : new_us,
+        opt_flow_x    : opt_flow_x,
+        opt_flow_y    : opt_flow_y,
+        opt_gyro_x    : opt_gyro_x,
+        opt_gyro_y    : opt_gyro_y,
+        opt_yaw       : opt_yaw,
+        kalman_x      : kalman_x,
+        kalman_y      : kalman_y,
+        kalman_z      : kalman_z
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -867,7 +879,8 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "QBffffff",   "TimeUS,Qual,flowX,flowY,bodyX,bodyY,posz,kalz" },
+      "OF",   "QBffffffffffff",   "TimeUS,Qual,ux,uy,uz,new,fx,fy,gx,gy,yaw,kx,ky,kz" },
+
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
@@ -1009,9 +1022,9 @@ void Copter::Log_Write_Vehicle_Startup_Messages() {}
 void Copter::Log_Write_Heli() {}
 #endif
 
-#if OPTFLOW == ENABLED
-void Copter::Log_Write_Optflow() {}
-#endif
+// #if OPTFLOW == ENABLED
+// void Copter::Log_Write_Optflow() {}
+// #endif
 
 void Copter::start_logging() {}
 void Copter::log_init(void) {}

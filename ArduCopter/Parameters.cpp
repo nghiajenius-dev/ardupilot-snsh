@@ -894,21 +894,21 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: A description of my new parameter goes here
     // @Range: -32768 32767
     // @User: Advanced
-    GSCALAR(new_parameter_1, "NEW_PARAMETER_1", 4.0f),
+    GSCALAR(new_parameter_1, "NEW_PARAMETER_1", 0.06f),
 
     // @Param: NEW_PARAMETER_2
     // @DisplayName: New Parameter 2
     // @Description: A description of my new parameter goes here
     // @Range: -32768 32767
     // @User: Advanced
-    GSCALAR(new_parameter_2, "NEW_PARAMETER_2", 0),
+    GSCALAR(new_parameter_2, "NEW_PARAMETER_2", 0.0f),
 
     // @Param: NEW_PARAMETER_3
     // @DisplayName: New Parameter 3
     // @Description: A description of my new parameter goes here
     // @Range: -32768 32767
     // @User: Advanced
-    GSCALAR(new_parameter_3, "NEW_PARAMETER_3", 0),
+    GSCALAR(new_parameter_3, "NEW_PARAMETER_3", 0.02f),
 
     
     AP_VAREND

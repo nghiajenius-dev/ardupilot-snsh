@@ -145,7 +145,7 @@ void Copter::update_optical_flow(void)
         const Vector3f &posOffset = optflow.get_pos_offset();
         ahrs.writeOptFlowMeas(flowQuality, flowRate, bodyRate, last_of_update, posOffset);
         if (g.log_bitmask & MASK_LOG_OPTFLOW) {
-            Log_Write_Optflow();
+            // Log_Write_Optflow();
         }
     }
 }

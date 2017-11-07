@@ -739,8 +739,9 @@ private:
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
-    void Log_Write_Optflow();
-    void Log_Write_NLS_KAL(float x1, float y1, float x2, float y2, float z1, float z2);
+    // void Log_Write_Optflow();
+    void Log_Write_NLS_KAL( float us_x, float us_y, float us_z,float new_us,float opt_flow_x, float opt_flow_y,float opt_gyro_x, float opt_gyro_y, float opt_yaw, float kalman_x, float kalman_y, float kalman_z);
+
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();
     void Log_Write_Performance();

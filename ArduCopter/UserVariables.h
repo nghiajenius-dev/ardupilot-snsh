@@ -60,9 +60,9 @@ float target_roll = 0.0f;
 float target_pitch = 0.0f;
 bool is_armed = false;
 
-PID::PID_PARAMETERS pid_pos_x_param = {.Kp = 1.2, .Ki = 0.0, .Kd = 0.05,
+PID::PID_PARAMETERS pid_pos_x_param = {.Kp = 0.05, .Ki = 0.0, .Kd = 0.005,
 		.Ts = 0.01, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
-PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 1.2, .Ki = 0.0, .Kd = 0.05,
+PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 0.05, .Ki = 0.0, .Kd = 0.005,
 		.Ts = 0.01, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
 
 PID pid_posx;

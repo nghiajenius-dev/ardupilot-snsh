@@ -13,7 +13,6 @@ void Copter::userhook_init()
     optflow.init();
     frame_yaw_offset = 0.0f;
     multirate_kalman_initialize();
-
    
 #ifdef RUN_TRILATERATION
     LeastSquare_NJ_initialize();
@@ -163,19 +162,21 @@ void Copter::userhook_FastLoop()
     //     R_OP[1] = 0;
     //     R_OP[2] = 0;
     // }     
+    
+    // KALMAN
     multirate_kalman(R_OP, nls_healthy, opt_flow, opt_gyro, lidar_h, k_pos,yaw_angle);
+    s16_range_finder = (int)(k_pos[2]*100);    
+    AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
+    AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
+    AP_Notify::flags.ips_z = (int)(k_pos[2]*100);
+    // k_timer = AP_HAL::micros()-k_timer;  
+    //DATA Flash
+    Log_Write_NLS_KAL(R_OP[0],R_OP[1],R_OP[2],(float)nls_healthy,opt_flow[0],opt_flow[1],opt_gyro[0],opt_gyro[1],yaw_angle,k_pos[0],k_pos[1],k_pos[2]);
     // reset nls_healthy after kalman
     // cliSerial->printf("%.2f,%.2f,%.2f,%.1f\r\n",k_pos[0],k_pos[1],k_pos[2],(double)ToDeg(yaw_angle));
     if(nls_healthy){
         nls_healthy = false; 
     }
-    s16_range_finder = (int)(k_pos[2]*100);
-    
-    AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
-    AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
-    AP_Notify::flags.ips_z = (int)(k_pos[2]*100);
-    k_timer = AP_HAL::micros()-k_timer;    
-
 	// hal.uartF->printf("K: %.2f, %.2f, %.2f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
 
     if (motors->armed() && !is_armed)
@@ -190,8 +191,7 @@ void Copter::userhook_FastLoop()
         cliSerial->printf("TARGET_POS: %.2f, %.2f \n",v3f_target_control.x , v3f_target_control.y);
     } else if (!motors->armed() && is_armed ) is_armed = false;
     
-    //DATA Flash
-    Log_Write_NLS_KAL(R_OP[0], R_OP[1], k_pos[0], k_pos[1], R_OP[2], k_pos[2]);
+
 }
 #endif
 
@@ -205,6 +205,10 @@ void Copter::userhook_50Hz()
 #ifdef USERHOOK_MEDIUMLOOP
 void Copter::userhook_MediumLoop()
 {
+       //set pid
+    pid_posx.pid_set_k_params(g.new_parameter_1,g.new_parameter_2,g.new_parameter_3);
+    pid_posy.pid_set_k_params(g.new_parameter_1,g.new_parameter_2,g.new_parameter_3);
+
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
     air_temperature = barometer.get_temperature();
