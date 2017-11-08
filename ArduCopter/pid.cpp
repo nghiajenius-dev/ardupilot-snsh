@@ -11,6 +11,8 @@ void PID::init(PID_PARAMETERS param){
     pid_param.Ts = param.Ts;
     pid_param.u = param.u;
     pid_param.u_ = param.u_;
+
+    intergral = 0.0;
 }
 
 void PID::pid_set_k_params(float Kp,float Ki, float Kd)
@@ -26,9 +28,16 @@ float PID::pid_process(float error)
     pid_param.e_ = pid_param.e;
     pid_param.e = error;
     // pid_param.u_ = pid_param.u;
+
+    intergral = intergral + pid_param.Ts * pid_param.e;
+    if (intergral > 2)
+        intergral = 2;
+    else if (intergral < -2)
+        intergral = -2;
+
     pid_param.u = pid_param.Kp * (pid_param.e)
-            // + pid_param.Ki * pid_param.Ts * pid_param.e
-            + (pid_param.Kd / pid_param.Ts) * (pid_param.e - pid_param.e_);
+            + pid_param.Ki * intergral
+            + pid_param.Kd * (pid_param.e - pid_param.e_) / pid_param.Ts;
 
     // if (pid_param.u > pid_param.PID_Saturation)
     // {

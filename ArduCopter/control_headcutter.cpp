@@ -169,7 +169,7 @@ void Copter::headcutter_run()
             pid_pitch = -1200;
         
         // cliSerial->printf(": %.2f, %.2f, %.2f, %.2f \n", pid_roll, error_x, pid_pitch, error_y);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
         //END OF HACK
 
         // call attitude controller

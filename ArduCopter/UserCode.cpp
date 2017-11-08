@@ -19,6 +19,9 @@ void Copter::userhook_init()
 #endif
     pid_posx.init(pid_pos_x_param);
     pid_posy.init(pid_pos_y_param);
+
+    v3f_target_control.x = 100.0;
+    v3f_target_control.y = 100.0;
 }
 #endif
  
@@ -94,7 +97,7 @@ void Copter::userhook_FastLoop()
             }
 
             LeastSquare_NJ(5,tempMR,tempRCM, 2, R_OP); 
-            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)){
+            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)&&(R_OP[0]<2200)&&(R_OP[1]<2200)&&(R_OP[2]<2200)){
                 nls_healthy = true;
                 // cliSerial->printf("NLS:%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
             }
@@ -182,8 +185,10 @@ void Copter::userhook_FastLoop()
     if (motors->armed() && !is_armed)
     {
         is_armed = true;
-        v3f_target_control.x = k_pos[0]*100;
-        v3f_target_control.y = k_pos[1]*100;
+        // v3f_target_control.x = k_pos[0]*100;
+        // v3f_target_control.y = k_pos[1]*100;
+        v3f_target_control.x = 100.0;
+        v3f_target_control.y = 100.0;
 
         target_roll = ahrs.roll;
         target_pitch = ahrs.pitch;

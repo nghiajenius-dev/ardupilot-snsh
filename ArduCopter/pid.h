@@ -25,6 +25,7 @@ public:
 
 private:
    PID_PARAMETERS pid_param;
+   float intergral;
 };
 
 #endif // PID_H
