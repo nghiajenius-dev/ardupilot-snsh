@@ -140,10 +140,10 @@ extern "C"{
 #include "rt_nonfinite.h"
 #include "rtwtypes.h"
 
-#include "multirate_kalman.h"
-#include "multirate_kalman_types.h"
-#include "multirate_kalman_terminate.h"
-#include "multirate_kalman_initialize.h"
+#include "multirate_kalman_v2.h"
+#include "multirate_kalman_v2_types.h"
+#include "multirate_kalman_v2_terminate.h"
+#include "multirate_kalman_v2_initialize.h"
 
 #include "LeastSquare_NJ.h"
 #include "LeastSquare_NJ_types.h"

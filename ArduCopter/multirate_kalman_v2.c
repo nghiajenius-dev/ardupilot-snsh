@@ -1,20 +1,19 @@
 /*
- * File: multirate_kalman.c
+ * File: multirate_kalman_v2.c
  *
  * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 18-Oct-2017 16:34:24
+ * C/C++ source code generated on  : 08-Nov-2017 15:09:06
  */
 
 /* Include Files */
 #include "rt_nonfinite.h"
-#include "multirate_kalman.h"
+#include "multirate_kalman_v2.h"
 #include "xzgetrf.h"
 
 /* Variable Definitions */
 static double x_est[6];
 static boolean_T x_est_not_empty;
 static double p_est[36];
-static double pre_lidar_h;
 
 /* Function Definitions */
 
@@ -24,39 +23,35 @@ static double pre_lidar_h;
  * Arguments    : const double ips_pos[3]
  *                double ips_flag
  *                const double opt_flow[2]
- *                const double opt_gyro[3]
- *                double lidar_h
+ *                const double opt_gyro[2]
+ *                double yaw_angle
  *                double k_pos[3]
  * Return Type  : void
  */
-void multirate_kalman( double ips_pos[3], double ips_flag,  double
-                      opt_flow[2],  double opt_gyro[3], double lidar_h,
-                      double k_pos[3], double yaw_angle)
+void multirate_kalman_v2(double ips_pos[3], double ips_flag, 
+  double opt_flow[2], double opt_gyro[2], double yaw_angle, double k_pos[3])
 {
   int i;
   int jp;
   double v_optical_idx_0;
   double x_pred[6];
-  int kBcol;
-  static const double Q1[36] = { 0.040000000000000008, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.040000000000000008, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.040000000000000008, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 1.0E-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6 };
+  static const double Q1[36] = { 25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 25.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8 };
 
+  int kBcol;
   double v_optical_idx_1;
   double a[36];
   int jBcol;
   double temp;
-  double A;
   static const double b_a[36] = { 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 1.0, 0.0, 0.0,
     0.0, 0.01, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 1.0 };
 
   double p_pred[36];
-  static const double Q2[36] = { 0.010000000000000002, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.010000000000000002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.010000000000000002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8 };
+  static const double Q2[36] = { 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6 };
 
   static const double b[36] = { 1.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 1.0, 0.0,
     0.0, 0.01, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
@@ -65,16 +60,15 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
   int ipiv[6];
   double y[36];
   double S[36];
+  int j;
   int k;
   signed char p[6];
   static const signed char c_a[36] = { 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
     1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 };
 
-  int j;
-  static const double R1[36] = { 0.040000000000000008, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.040000000000000008, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0025000000000000005 };
+  static const double R1[36] = { 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6 };
 
   double K[36];
   double b_x_pred[6];
@@ -82,12 +76,12 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
   double d_a[6];
   double c_x_pred[6];
 
+  /*  function [ k_pos,Vx,Vy] = multirate_kalman_v2(ips_pos,ips_flag,opt_flow,opt_gyro,yaw_angle) */
   /*  KF1: x=[Sx,Sy,Sz,Vx,Vy,Vz] */
   /*  x = Ax + Bu + w (B=0) */
   /*  z = Hx + v */
   /*  100Hz -> 10ms */
   /*  T2 = 1/20;              % 20Hz  -> 50ms */
-  /* offset z */
   /*  Predict: Time update */
   /*  x(k+1|k) */
   /*  P(k+1|k) */
@@ -108,11 +102,11 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
     }
 
     memcpy(&p_est[0], &Q1[0], 36U * sizeof(double));
-    // yaw_angle = 0;
   }
 
   /*  KALMAN */
   if (ips_flag == 1.0) {
+    /*  at 20Hz */
     for (jp = 0; jp < 6; jp++) {
       x_pred[jp] = 0.0;
       for (kBcol = 0; kBcol < 6; kBcol++) {
@@ -134,19 +128,14 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
       }
     }
 
-    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * (x_pred[2]);
+    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * x_pred[2];
 
     /* [m/s] */
-    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2]);
+    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * x_pred[2];
 
     /* [m/s] */
-    // yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;
-
-    /* [rad] */
-    A = lidar_h - pre_lidar_h;
-    pre_lidar_h = lidar_h;
-
-    /*  Update new lidar val */
+    /*      Vx = (x_pred(1)-x_est(1))/T1; */
+    /*      Vy = (x_pred(2)-x_est(2))/T1; */
     for (jp = 0; jp < 6; jp++) {
       for (kBcol = 0; kBcol < 6; kBcol++) {
         a[jp + 6 * kBcol] = 0.0;
@@ -231,11 +220,11 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
       b_x_pred[jp] = ips_pos[jp];
     }
 
-    b_x_pred[3] = v_optical_idx_0 * cos(yaw_angle) - v_optical_idx_1 * sin
-      (yaw_angle);
-    b_x_pred[4] = v_optical_idx_0 * sin(yaw_angle) + v_optical_idx_1 * cos
-      (yaw_angle);
-    b_x_pred[5] = A / 0.01;
+    b_x_pred[3] = (v_optical_idx_0 * cos(yaw_angle) - v_optical_idx_1 * sin
+                   (yaw_angle)) * 1.7;
+    b_x_pred[4] = (v_optical_idx_0 * sin(yaw_angle) + v_optical_idx_1 * cos
+                   (yaw_angle)) * 1.3;
+    b_x_pred[5] = (x_pred[2] - x_est[2]) / 0.01;
     for (jp = 0; jp < 6; jp++) {
       d_a[jp] = 0.0;
       for (kBcol = 0; kBcol < 6; kBcol++) {
@@ -297,19 +286,14 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
       }
     }
 
-    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * (x_pred[2]);
+    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * x_pred[2];
 
     /* [m/s] */
-    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * (x_pred[2]);
+    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * x_pred[2];
 
     /* [m/s] */
-    // yaw_angle += (opt_gyro[2] - -0.00959931088596882) * 0.01 * 1.173;
-
-    /* [rad] */
-    A = lidar_h - pre_lidar_h;
-    pre_lidar_h = lidar_h;
-
-    /*  Update new lidar val */
+    /*      Vx = (x_pred(1)-x_est(1))/T1; */
+    /*      Vy = (x_pred(2)-x_est(2))/T1; */
     for (jp = 0; jp < 6; jp++) {
       for (kBcol = 0; kBcol < 6; kBcol++) {
         a[jp + 6 * kBcol] = 0.0;
@@ -383,11 +367,11 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
       b_x_pred[jp] = x_pred[jp];
     }
 
-    b_x_pred[3] = v_optical_idx_0 * cos(yaw_angle) - v_optical_idx_1 * sin
-      (yaw_angle);
-    b_x_pred[4] = v_optical_idx_0 * sin(yaw_angle) + v_optical_idx_1 * cos
-      (yaw_angle);
-    b_x_pred[5] = A / 0.01;
+    b_x_pred[3] = (v_optical_idx_0 * cos(yaw_angle) - v_optical_idx_1 * sin
+                   (yaw_angle)) * 1.7;
+    b_x_pred[4] = (v_optical_idx_0 * sin(yaw_angle) + v_optical_idx_1 * cos
+                   (yaw_angle)) * 1.3;
+    b_x_pred[5] = (x_pred[2] - x_est[2]) / 0.01;
     for (jp = 0; jp < 6; jp++) {
       d_a[jp] = 0.0;
       for (kBcol = 0; kBcol < 6; kBcol++) {
@@ -430,22 +414,13 @@ void multirate_kalman( double ips_pos[3], double ips_flag,  double
  * Arguments    : void
  * Return Type  : void
  */
-void multirate_kalman_init(void)
-{
-  pre_lidar_h = 0.0;
-}
-
-/*
- * Arguments    : void
- * Return Type  : void
- */
 void x_est_not_empty_init(void)
 {
   x_est_not_empty = false;
 }
 
 /*
- * File trailer for multirate_kalman.c
+ * File trailer for multirate_kalman_v2.c
  *
  * [EOF]
  */

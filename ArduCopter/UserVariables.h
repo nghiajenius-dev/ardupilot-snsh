@@ -28,7 +28,7 @@ uint32_t opt_integration_timespan;
 
 // KALMAN
 double opt_flow[2];
-double opt_gyro[3];
+double opt_gyro[2];
 double lidar_h;
 double k_pos[3];
 uint32_t k_timer;

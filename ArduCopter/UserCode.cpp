@@ -12,7 +12,7 @@ void Copter::userhook_init()
 
     optflow.init();
     frame_yaw_offset = 0.0f;
-    multirate_kalman_initialize();
+    multirate_kalman_v2_initialize();
    
 #ifdef RUN_TRILATERATION
     LeastSquare_NJ_initialize();
@@ -126,7 +126,7 @@ void Copter::userhook_FastLoop()
 
     opt_gyro[0] = opt_bodyRate.x;
     opt_gyro[1] = opt_bodyRate.y;
-    opt_gyro[2] = bodyRateZ;
+    // opt_gyro[2] = bodyRateZ;
     // cliSerial->printf("%f,%f,%f,%f,%d\r\n",opt_flowRate.x,opt_flowRate.y,opt_bodyRate.x,opt_bodyRate.y,opt_integration_timespan);
 
 //==============================INS======================================//
@@ -164,7 +164,7 @@ void Copter::userhook_FastLoop()
     // }     
     
     // KALMAN
-    multirate_kalman(R_OP, nls_healthy, opt_flow, opt_gyro, lidar_h, k_pos,yaw_angle);
+    multirate_kalman_v2(R_OP, nls_healthy, opt_flow, opt_gyro, yaw_angle, k_pos);
     s16_range_finder = (int)(k_pos[2]*100);    
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
     AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
