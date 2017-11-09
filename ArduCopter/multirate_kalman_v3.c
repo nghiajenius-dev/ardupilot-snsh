@@ -1,46 +1,46 @@
 /*
- * File: multirate_kalman_v2.c
+ * File: multirate_kalman_v3.c
  *
  * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 08-Nov-2017 15:09:06
+ * C/C++ source code generated on  : 09-Nov-2017 13:40:52
  */
 
 /* Include Files */
 #include "rt_nonfinite.h"
-#include "multirate_kalman_v2.h"
+#include "multirate_kalman_v3.h"
 #include "xzgetrf.h"
 
 /* Variable Definitions */
 static double x_est[6];
 static boolean_T x_est_not_empty;
 static double p_est[36];
+static double pos[3];
+static double Vx;
+static double Vy;
+static double Vz;
 
 /* Function Definitions */
 
 /*
+ * function [ k_pos] = multirate_kalman_v2(ips_pos,ips_flag,opt_flow,opt_gyro,yaw_angle)
  * MULTIRATE_KALMAN Summary of this function goes here
  *    Detailed explanation goes here
  * Arguments    : const double ips_pos[3]
  *                double ips_flag
- *                const double opt_flow[2]
- *                const double opt_gyro[2]
- *                double yaw_angle
  *                double k_pos[3]
  * Return Type  : void
  */
-void multirate_kalman_v2(double ips_pos[3], double ips_flag, 
-  double opt_flow[2], double opt_gyro[2], double yaw_angle, double k_pos[3])
+void multirate_kalman_v3(double ips_pos[3], double ips_flag, double k_pos
+  [3])
 {
   int i;
   int jp;
-  double v_optical_idx_0;
   double x_pred[6];
-  static const double Q1[36] = { 25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 25.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 25.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-8 };
-
   int kBcol;
-  double v_optical_idx_1;
+  double p_pos[3];
+  static const signed char Q1[36] = { 25, 0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0,
+    25, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 };
+
   double a[36];
   int jBcol;
   double temp;
@@ -49,9 +49,8 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
     0.0, 0.01, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.01, 0.0, 0.0, 1.0 };
 
   double p_pred[36];
-  static const double Q2[36] = { 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6 };
+  static const signed char Q2[36] = { 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+    1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 };
 
   static const double b[36] = { 1.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 1.0, 0.0,
     0.0, 0.01, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.01, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
@@ -60,32 +59,28 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
   int ipiv[6];
   double y[36];
   double S[36];
-  int j;
   int k;
   signed char p[6];
-  static const signed char c_a[36] = { 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
-    1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1 };
-
-  static const double R1[36] = { 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0E-6 };
+  int j;
+  static const signed char R1[36] = { 100, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0,
+    0, 100, 0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 25 };
 
   double K[36];
   double b_x_pred[6];
   double b_p_pred[36];
-  double d_a[6];
+  double b_Q2[6];
   double c_x_pred[6];
 
-  /*  function [ k_pos,Vx,Vy] = multirate_kalman_v2(ips_pos,ips_flag,opt_flow,opt_gyro,yaw_angle) */
   /*  KF1: x=[Sx,Sy,Sz,Vx,Vy,Vz] */
   /*  x = Ax + Bu + w (B=0) */
   /*  z = Hx + v */
   /*  100Hz -> 10ms */
-  /*  T2 = 1/20;              % 20Hz  -> 50ms */
+  /*  20Hz  -> 50ms */
+  /* Q1,R1: 100Hz */
+  /* Q2,R2:20Hz */
   /*  Predict: Time update */
   /*  x(k+1|k) */
   /*  P(k+1|k) */
-  /*  uk = zeros(3,range);            % vx,vy,vz */
   /*  Update: Measurement update */
   /*  Global var */
   /*  Init value */
@@ -101,7 +96,13 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
       x_est[i] = ips_pos[i];
     }
 
-    memcpy(&p_est[0], &Q1[0], 36U * sizeof(double));
+    for (jp = 0; jp < 36; jp++) {
+      p_est[jp] = Q1[jp];
+    }
+
+    for (i = 0; i < 3; i++) {
+      pos[i] = ips_pos[i];
+    }
   }
 
   /*  KALMAN */
@@ -124,23 +125,23 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
           temp += a[jp + 6 * jBcol] * b[jBcol + 6 * kBcol];
         }
 
-        p_pred[jp + 6 * kBcol] = temp + Q2[jp + 6 * kBcol];
+        p_pred[jp + 6 * kBcol] = temp + (double)Q2[jp + 6 * kBcol];
       }
     }
 
-    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * x_pred[2];
+    for (i = 0; i < 3; i++) {
+      p_pos[i] = pos[i];
+      pos[i] = ips_pos[i];
+    }
 
-    /* [m/s] */
-    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * x_pred[2];
-
-    /* [m/s] */
-    /*      Vx = (x_pred(1)-x_est(1))/T1; */
-    /*      Vy = (x_pred(2)-x_est(2))/T1; */
+    Vx = (pos[0] - p_pos[0]) / 0.05;
+    Vy = (pos[1] - p_pos[1]) / 0.05;
+    Vz = (pos[2] - p_pos[2]) / 0.05;
     for (jp = 0; jp < 6; jp++) {
       for (kBcol = 0; kBcol < 6; kBcol++) {
         a[jp + 6 * kBcol] = 0.0;
         for (jBcol = 0; jBcol < 6; jBcol++) {
-          a[jp + 6 * kBcol] += (double)c_a[jp + 6 * jBcol] * p_pred[jBcol + 6 *
+          a[jp + 6 * kBcol] += (double)Q2[jp + 6 * jBcol] * p_pred[jBcol + 6 *
             kBcol];
         }
       }
@@ -148,10 +149,10 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
       for (kBcol = 0; kBcol < 6; kBcol++) {
         temp = 0.0;
         for (jBcol = 0; jBcol < 6; jBcol++) {
-          temp += a[jp + 6 * jBcol] * (double)c_a[jBcol + 6 * kBcol];
+          temp += a[jp + 6 * jBcol] * (double)Q2[jBcol + 6 * kBcol];
         }
 
-        S[jp + 6 * kBcol] = temp + R1[jp + 6 * kBcol];
+        S[jp + 6 * kBcol] = temp + (double)R1[jp + 6 * kBcol];
       }
     }
 
@@ -200,7 +201,7 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
       for (jp = 0; jp < 6; jp++) {
         b_p_pred[j + 6 * jp] = 0.0;
         for (kBcol = 0; kBcol < 6; kBcol++) {
-          b_p_pred[j + 6 * jp] += p_pred[j + 6 * kBcol] * (double)c_a[kBcol + 6 *
+          b_p_pred[j + 6 * jp] += p_pred[j + 6 * kBcol] * (double)Q2[kBcol + 6 *
             jp];
         }
       }
@@ -220,18 +221,16 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
       b_x_pred[jp] = ips_pos[jp];
     }
 
-    b_x_pred[3] = (v_optical_idx_0 * cos(yaw_angle) - v_optical_idx_1 * sin
-                   (yaw_angle)) * 1.7;
-    b_x_pred[4] = (v_optical_idx_0 * sin(yaw_angle) + v_optical_idx_1 * cos
-                   (yaw_angle)) * 1.3;
-    b_x_pred[5] = (x_pred[2] - x_est[2]) / 0.01;
+    b_x_pred[3] = Vx;
+    b_x_pred[4] = Vy;
+    b_x_pred[5] = Vz;
     for (jp = 0; jp < 6; jp++) {
-      d_a[jp] = 0.0;
+      b_Q2[jp] = 0.0;
       for (kBcol = 0; kBcol < 6; kBcol++) {
-        d_a[jp] += (double)c_a[jp + 6 * kBcol] * x_pred[kBcol];
+        b_Q2[jp] += (double)Q2[jp + 6 * kBcol] * x_pred[kBcol];
       }
 
-      c_x_pred[jp] = b_x_pred[jp] - d_a[jp];
+      c_x_pred[jp] = b_x_pred[jp] - b_Q2[jp];
     }
 
     /*  new state */
@@ -282,23 +281,21 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
           temp += a[jp + 6 * jBcol] * b[jBcol + 6 * kBcol];
         }
 
-        p_pred[jp + 6 * kBcol] = temp + Q1[jp + 6 * kBcol];
+        p_pred[jp + 6 * kBcol] = temp + (double)Q1[jp + 6 * kBcol];
       }
     }
 
-    v_optical_idx_0 = (opt_flow[1] - opt_gyro[1]) * x_pred[2];
-
-    /* [m/s] */
-    v_optical_idx_1 = (opt_flow[0] - opt_gyro[0]) * x_pred[2];
-
-    /* [m/s] */
-    /*      Vx = (x_pred(1)-x_est(1))/T1; */
-    /*      Vy = (x_pred(2)-x_est(2))/T1; */
+    /*      v_optical(1) = (opt_flow(2)-opt_gyro(2))*(x_pred(3)-optical_z_offset);%[m/s] */
+    /*      v_optical(2) = (opt_flow(1)-opt_gyro(1))*(x_pred(3)-optical_z_offset);%[m/s] */
+    /*      Vx = v_optical(1)*cos(yaw_angle)-v_optical(2)*sin(yaw_angle); */
+    /*      Vy = v_optical(1)*sin(yaw_angle)+v_optical(2)*cos(yaw_angle); */
+    /*      Vx = Vx*scaleX; */
+    /*      Vy = Vy*scaleY; */
     for (jp = 0; jp < 6; jp++) {
       for (kBcol = 0; kBcol < 6; kBcol++) {
         a[jp + 6 * kBcol] = 0.0;
         for (jBcol = 0; jBcol < 6; jBcol++) {
-          a[jp + 6 * kBcol] += (double)c_a[jp + 6 * jBcol] * p_pred[jBcol + 6 *
+          a[jp + 6 * kBcol] += (double)Q2[jp + 6 * jBcol] * p_pred[jBcol + 6 *
             kBcol];
         }
       }
@@ -306,13 +303,13 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
       for (kBcol = 0; kBcol < 6; kBcol++) {
         temp = 0.0;
         for (jBcol = 0; jBcol < 6; jBcol++) {
-          temp += a[jp + 6 * jBcol] * (double)c_a[jBcol + 6 * kBcol];
+          temp += a[jp + 6 * jBcol] * (double)Q2[jBcol + 6 * kBcol];
         }
 
-        S[jp + 6 * kBcol] = temp + R1[jp + 6 * kBcol];
+        S[jp + 6 * kBcol] = temp + (double)R1[jp + 6 * kBcol];
         K[jp + 6 * kBcol] = 0.0;
         for (jBcol = 0; jBcol < 6; jBcol++) {
-          K[jp + 6 * kBcol] += p_pred[jp + 6 * jBcol] * (double)c_a[jBcol + 6 *
+          K[jp + 6 * kBcol] += p_pred[jp + 6 * jBcol] * (double)Q2[jBcol + 6 *
             kBcol];
         }
       }
@@ -367,18 +364,16 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
       b_x_pred[jp] = x_pred[jp];
     }
 
-    b_x_pred[3] = (v_optical_idx_0 * cos(yaw_angle) - v_optical_idx_1 * sin
-                   (yaw_angle)) * 1.7;
-    b_x_pred[4] = (v_optical_idx_0 * sin(yaw_angle) + v_optical_idx_1 * cos
-                   (yaw_angle)) * 1.3;
-    b_x_pred[5] = (x_pred[2] - x_est[2]) / 0.01;
+    b_x_pred[3] = Vx;
+    b_x_pred[4] = Vy;
+    b_x_pred[5] = Vz;
     for (jp = 0; jp < 6; jp++) {
-      d_a[jp] = 0.0;
+      b_Q2[jp] = 0.0;
       for (kBcol = 0; kBcol < 6; kBcol++) {
-        d_a[jp] += (double)c_a[jp + 6 * kBcol] * x_pred[kBcol];
+        b_Q2[jp] += (double)Q2[jp + 6 * kBcol] * x_pred[kBcol];
       }
 
-      c_x_pred[jp] = b_x_pred[jp] - d_a[jp];
+      c_x_pred[jp] = b_x_pred[jp] - b_Q2[jp];
     }
 
     /*  new state */
@@ -414,13 +409,24 @@ void multirate_kalman_v2(double ips_pos[3], double ips_flag,
  * Arguments    : void
  * Return Type  : void
  */
+void multirate_kalman_v3_init(void)
+{
+  Vx = 0.0;
+  Vy = 0.0;
+  Vz = 0.0;
+}
+
+/*
+ * Arguments    : void
+ * Return Type  : void
+ */
 void x_est_not_empty_init(void)
 {
   x_est_not_empty = false;
 }
 
 /*
- * File trailer for multirate_kalman_v2.c
+ * File trailer for multirate_kalman_v3.c
  *
  * [EOF]
  */

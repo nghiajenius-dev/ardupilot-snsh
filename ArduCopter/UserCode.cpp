@@ -12,7 +12,7 @@ void Copter::userhook_init()
 
     optflow.init();
     frame_yaw_offset = 0.0f;
-    multirate_kalman_v2_initialize();
+    multirate_kalman_v3_initialize();
    
 #ifdef RUN_TRILATERATION
     LeastSquare_NJ_initialize();
@@ -97,7 +97,7 @@ void Copter::userhook_FastLoop()
             }
 
             LeastSquare_NJ(5,tempMR,tempRCM, 2, R_OP); 
-            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)&&(R_OP[0]<2200)&&(R_OP[1]<2200)&&(R_OP[2]<2200)){
+            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)&&(R_OP[0]<2500)&&(R_OP[1]<2500)&&(R_OP[2]<2500)){
                 nls_healthy = true;
                 // cliSerial->printf("NLS:%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
             }
@@ -118,47 +118,46 @@ void Copter::userhook_FastLoop()
     ips_flag = 0; 
 
 //==============================PX4FLOW======================================//
-    optflow.update();
-    Vector2f opt_flowRate = optflow.flowRate();
-    Vector2f opt_bodyRate = optflow.bodyRate();
-    uint32_t opt_integration_timespan = optflow.integration_timespan();
-    float bodyRateZ = optflow.bodyRateZ();
+    // optflow.update();
+    // Vector2f opt_flowRate = optflow.flowRate();
+    // Vector2f opt_bodyRate = optflow.bodyRate();
+    // uint32_t opt_integration_timespan = optflow.integration_timespan();
+    // float bodyRateZ = optflow.bodyRateZ();
 
-    opt_flow[0]= opt_flowRate.x;
-    opt_flow[1]= opt_flowRate.y;
+    // opt_flow[0]= opt_flowRate.x;
+    // opt_flow[1]= opt_flowRate.y;
 
-    opt_gyro[0] = opt_bodyRate.x;
-    opt_gyro[1] = opt_bodyRate.y;
+    // opt_gyro[0] = opt_bodyRate.x;
+    // opt_gyro[1] = opt_bodyRate.y;
     // opt_gyro[2] = bodyRateZ;
     // cliSerial->printf("%f,%f,%f,%f,%d\r\n",opt_flowRate.x,opt_flowRate.y,opt_bodyRate.x,opt_bodyRate.y,opt_integration_timespan);
 
 //==============================INS======================================//
 
-    ips_gyro = ins.get_gyro();
-    ips_accel = ins.get_accel();
-    ins_att[0] = (ahrs.roll);
-    ins_att[1] = (ahrs.pitch);
-    ins_att[2] = (double)ToRad(ahrs.yaw_sensor)/100;
+    // ips_gyro = ins.get_gyro();
+    // ips_accel = ins.get_accel();
+    // ins_att[0] = (ahrs.roll);
+    // ins_att[1] = (ahrs.pitch);
+    // ins_att[2] = (double)ToRad(ahrs.yaw_sensor)/100;
     // calc yaw angle
-    yaw_angle = -(ins_att[2] - frame_yaw_offset);
-    if(yaw_angle>2*M_PI){
-        yaw_angle -= 2*M_PI;
-    }
-    if(yaw_angle<0){
-        yaw_angle += 2*M_PI;
-    }
+    // yaw_angle = -(ins_att[2] - frame_yaw_offset);
+    // if(yaw_angle>2*M_PI){
+    //     yaw_angle -= 2*M_PI;
+    // }
+    // if(yaw_angle<0){
+    //     yaw_angle += 2*M_PI;
+    // }
     // cliSerial->printf("%.1f,%.1f\r\n",(double)ToDeg(frame_yaw_offset),(double)ToDeg(yaw_angle));
     // hal.uartF->printf("INS:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",ips_gyro.x,ips_gyro.y,ips_gyro.z,ips_accel.x,ips_accel.y,ips_accel.z);
 
 //==============================KALMAN======================================//
-    k_timer = AP_HAL::micros();
+    // k_timer = AP_HAL::micros();
 
     if(nls_healthy){
         // Convert mm -> m
         R_OP[0] /= 1000; 
         R_OP[1] /= 1000;
-        R_OP[2] /= 1000;
-        lidar_h = R_OP[2];     //ips_z  
+        R_OP[2] /= 1000; 
     }
     // else{
     //     R_OP[0] = 0; 
@@ -167,14 +166,14 @@ void Copter::userhook_FastLoop()
     // }     
     
     // KALMAN
-    multirate_kalman_v2(R_OP, nls_healthy, opt_flow, opt_gyro, yaw_angle, k_pos);
+    multirate_kalman_v3(R_OP,nls_healthy,k_pos);
     s16_range_finder = (int)(k_pos[2]*100);    
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
     AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
     AP_Notify::flags.ips_z = (int)(k_pos[2]*100);
     // k_timer = AP_HAL::micros()-k_timer;  
     //DATA Flash
-    Log_Write_NLS_KAL(R_OP[0],R_OP[1],R_OP[2],(float)nls_healthy,opt_flow[0],opt_flow[1],opt_gyro[0],opt_gyro[1],yaw_angle,k_pos[0],k_pos[1],k_pos[2]);
+    Log_Write_NLS_KAL(R_OP[0],R_OP[1],R_OP[2],(float)nls_healthy);
     // reset nls_healthy after kalman
     // cliSerial->printf("%.2f,%.2f,%.2f,%.1f\r\n",k_pos[0],k_pos[1],k_pos[2],(double)ToDeg(yaw_angle));
     if(nls_healthy){
@@ -216,12 +215,12 @@ void Copter::userhook_MediumLoop()
 
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
-    air_temperature = barometer.get_temperature();
+    // air_temperature = barometer.get_temperature();
     // hal.uartF->printf("temp:%f",air_temperature);
 
 //==============================IPS_TRANSMIT======================================//
     hal.uartE->printf("{PARAM,TRIGGER_US}\n");
-    ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
+    // ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
 }
 #endif
 

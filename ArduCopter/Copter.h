@@ -140,10 +140,10 @@ extern "C"{
 #include "rt_nonfinite.h"
 #include "rtwtypes.h"
 
-#include "multirate_kalman_v2.h"
-#include "multirate_kalman_v2_types.h"
-#include "multirate_kalman_v2_terminate.h"
-#include "multirate_kalman_v2_initialize.h"
+#include "multirate_kalman_v3.h"
+#include "multirate_kalman_v3_types.h"
+#include "multirate_kalman_v3_terminate.h"
+#include "multirate_kalman_v3_initialize.h"
 
 #include "LeastSquare_NJ.h"
 #include "LeastSquare_NJ_types.h"
@@ -740,7 +740,8 @@ private:
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
     void Log_Write_Current();
     // void Log_Write_Optflow();
-    void Log_Write_NLS_KAL( float us_x, float us_y, float us_z,float new_us,float opt_flow_x, float opt_flow_y,float opt_gyro_x, float opt_gyro_y, float opt_yaw, float kalman_x, float kalman_y, float kalman_z);
+    // void Log_Write_NLS_KAL( float us_x, float us_y, float us_z,float new_us,float opt_flow_x, float opt_flow_y,float opt_gyro_x, float opt_gyro_y, float opt_yaw, float kalman_x, float kalman_y, float kalman_z);
+    void Log_Write_NLS_KAL(float us_x, float us_y, float us_z,float new_us);
 
     void Log_Write_Nav_Tuning();
     void Log_Write_Control_Tuning();

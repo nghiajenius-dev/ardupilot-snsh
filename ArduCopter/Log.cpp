@@ -221,19 +221,19 @@ void Copter::Log_Write_Current()
 struct PACKED log_Optflow {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t surface_quality;
+    // uint8_t surface_quality;
     float    us_x;
     float    us_y;
     float    us_z;
     float    new_us;          
-    float    opt_flow_x;   
-    float    opt_flow_y;    
-    float    opt_gyro_x;    
-    float    opt_gyro_y;    
-    float    opt_yaw;       
-    float    kalman_x;     
-    float    kalman_y;      
-    float    kalman_z; 
+    // float    opt_flow_x;   
+    // float    opt_flow_y;    
+    // float    opt_gyro_x;    
+    // float    opt_gyro_y;    
+    // float    opt_yaw;       
+    // float    kalman_x;     
+    // float    kalman_y;      
+    // float    kalman_z; 
 };
 
 // Write an optical flow packet
@@ -261,24 +261,25 @@ struct PACKED log_Optflow {
 //  #endif     // OPTFLOW == ENABLED
 // }
 
-void Copter::Log_Write_NLS_KAL( float us_x, float us_y, float us_z,float new_us,float opt_flow_x, float opt_flow_y,float opt_gyro_x, float opt_gyro_y, float opt_yaw, float kalman_x, float kalman_y, float kalman_z)
+// void Copter::Log_Write_NLS_KAL( float us_x, float us_y, float us_z,float new_us,float opt_flow_x, float opt_flow_y,float opt_gyro_x, float opt_gyro_y, float opt_yaw, float kalman_x, float kalman_y, float kalman_z)
+void Copter::Log_Write_NLS_KAL(float us_x, float us_y, float us_z,float new_us)
 {
     struct log_Optflow pkt = {
         LOG_PACKET_HEADER_INIT(LOG_OPTFLOW_MSG),
         time_us         : AP_HAL::micros64(),
-        surface_quality : 255,
+        // surface_quality : 255,
         us_x          : us_x,
         us_y          : us_y,
         us_z          : us_z,
         new_us        : new_us,
-        opt_flow_x    : opt_flow_x,
-        opt_flow_y    : opt_flow_y,
-        opt_gyro_x    : opt_gyro_x,
-        opt_gyro_y    : opt_gyro_y,
-        opt_yaw       : opt_yaw,
-        kalman_x      : kalman_x,
-        kalman_y      : kalman_y,
-        kalman_z      : kalman_z
+        // opt_flow_x    : opt_flow_x,
+        // opt_flow_y    : opt_flow_y,
+        // opt_gyro_x    : opt_gyro_x,
+        // opt_gyro_y    : opt_gyro_y,
+        // opt_yaw       : opt_yaw,
+        // kalman_x      : kalman_x,
+        // kalman_y      : kalman_y,
+        // kalman_z      : kalman_z
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -879,7 +880,7 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfHHH",          "TimeUS,Param,TunVal,CtrlIn,TunLo,TunHi" },  
     { LOG_OPTFLOW_MSG, sizeof(log_Optflow),       
-      "OF",   "QBffffffffffff",   "TimeUS,Qual,ux,uy,uz,new,fx,fy,gx,gy,yaw,kx,ky,kz" },
+      "OF",   "Qffff",   "TimeUS,ux,uy,uz,new" },
 
     { LOG_NAV_TUNING_MSG, sizeof(log_Nav_Tuning),       
       "NTUN", "Qffffffffff", "TimeUS,DPosX,DPosY,PosX,PosY,DVelX,DVelY,VelX,VelY,DAccX,DAccY" },
