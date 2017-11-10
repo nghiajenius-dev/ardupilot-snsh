@@ -29,9 +29,9 @@ void Copter::userhook_init()
 #ifdef USERHOOK_FASTLOOP
 void Copter::userhook_FastLoop()
 {
-    if( frame_yaw_offset == 0.0f){
-         frame_yaw_offset = (double)ToRad(ahrs.yaw_sensor)/100;
-    }
+    // if( frame_yaw_offset == 0.0f){
+    //      frame_yaw_offset = (double)ToRad(ahrs.yaw_sensor)/100;
+    // }
     // put your 100Hz code here
     // uartF: serial5, baud 115200
     //================================IPS====================================//
@@ -191,7 +191,8 @@ void Copter::userhook_FastLoop()
 
         target_roll = ahrs.roll;
         target_pitch = ahrs.pitch;
-
+        frame_yaw_offset = (double)ToRad(ahrs.yaw_sensor)/100;
+        
         cliSerial->printf("TARGET_POS: %.2f, %.2f \n",v3f_target_control.x , v3f_target_control.y);
     } else if (!motors->armed() && is_armed ) is_armed = false;
     

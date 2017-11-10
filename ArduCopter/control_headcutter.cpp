@@ -35,7 +35,7 @@ bool Copter::headcutter_init(bool ignore_checks)
 // should be called at 100hz or more
 void Copter::headcutter_run()
 {
-    float pid_roll, pid_pitch, error_x, error_y, x_gain = 0.1f, y_gain = 0.1f;
+    float pid_roll, pid_pitch, pid_roll_tmp, pid_pitch_tmp, error_x, error_y, x_gain = 0.1f, y_gain = 0.1f;
 
     AltHoldModeState althold_state;
     float takeoff_climb_rate = 0.0f;
@@ -157,6 +157,15 @@ void Copter::headcutter_run()
 
         pid_roll *= 100; // centi degree
         pid_pitch *= 100;
+
+     
+        // calc yaw angle
+        yaw_angle = (double)ToRad(ahrs.yaw_sensor)/100 - frame_yaw_offset;  //rad
+        pid_roll_tmp = pid_roll;
+        pid_pitch_tmp = pid_pitch;
+
+        pid_roll = pid_roll_tmp * cos(yaw_angle) + pid_pitch_tmp * sin(yaw_angle);
+        pid_pitch = pid_pitch_tmp * cos(yaw_angle) - pid_roll_tmp * sin(yaw_angle);
 
         if (pid_roll > 1000)    //limit 15 degree
             pid_roll = 1000;
