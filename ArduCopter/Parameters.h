@@ -369,9 +369,17 @@ public:
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
-        k_param_new_parameter_1, // 254
-        k_param_new_parameter_2, // 255
-        k_param_new_parameter_3, // 256
+        k_param_user_rll_kp, 
+        k_param_user_rll_ki, 
+        k_param_user_rll_kd, 
+
+        k_param_user_pit_kp,
+        k_param_user_pit_ki, 
+        k_param_user_pit_kd,
+
+        k_param_user_parm1,
+        k_param_user_parm2, 
+        k_param_user_parm3,
 
     };
 
@@ -489,9 +497,16 @@ public:
     AP_Float                autotune_min_d;
 
     // USER_DEFINE_PARA
-    AP_Float                new_parameter_1;
-    AP_Float                new_parameter_2;
-    AP_Float                new_parameter_3;
+    AP_Float                user_rll_kp;
+    AP_Float                user_rll_ki;
+    AP_Float                user_rll_kd;
+    AP_Float                user_pit_kp;
+    AP_Float                user_pit_ki;
+    AP_Float                user_pit_kd;
+
+    AP_Float                user_parm1;
+    AP_Float                user_parm2;
+    AP_Float                user_parm3;
 
 
     // Note: keep initializers here in the same order as they are declared

@@ -53,7 +53,7 @@ bool nls_healthy;
 // int c_i, c_j, c_k;
 // int max_NOR, max_index;
 
-volatile uint16_t s16_range_finder = 123;
+volatile uint16_t s16_range_finder;
 
 Vector3f v3f_target_control;
 float target_roll = 0.0f;

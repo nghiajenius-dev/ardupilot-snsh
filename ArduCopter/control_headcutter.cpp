@@ -158,18 +158,28 @@ void Copter::headcutter_run()
         pid_roll *= 100; // centi degree
         pid_pitch *= 100;
 
-        if (pid_roll > 1200)    //limit 15 degree
-            pid_roll = 1200;
-        if (pid_roll < -1200)
-            pid_roll = -1200;
+        if (pid_roll > 1000)    //limit 15 degree
+            pid_roll = 1000;
+        if (pid_roll < -1000)
+            pid_roll = -1000;
 
-        if (pid_pitch > 1200)
-            pid_pitch = 1200;
-        if (pid_pitch < -1200)
-            pid_pitch = -1200;
+        if (pid_pitch > 1000)
+            pid_pitch = 1000;
+        if (pid_pitch < -1000)
+            pid_pitch = -1000;
         
-        // cliSerial->printf(": %.2f, %.2f, %.2f, %.2f \n", pid_roll, error_x, pid_pitch, error_y);
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+        if(g.user_parm1 == 1){
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+
+        }
+        else if(g.user_parm1 == 2){
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+
+        }
+        else{
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+
+        }
         //END OF HACK
 
         // call attitude controller

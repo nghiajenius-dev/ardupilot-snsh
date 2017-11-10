@@ -887,28 +887,18 @@ const AP_Param::Info Copter::var_info[] = {
     // @Group: 
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
+///////////////////////////////////////////
+    GSCALAR(user_rll_kp, "USER_RLL_KP", 0.1f),
+    GSCALAR(user_rll_ki, "USER_RLL_KI", 0.0f),
+    GSCALAR(user_rll_kd, "USER_RLL_KD", 0.7f),
 
-    // USER_DEFINE_PARAM
-    // @Param: NEW_PARAMETER_1
-    // @DisplayName: New Parameter 1
-    // @Description: A description of my new parameter goes here
-    // @Range: -32768 32767
-    // @User: Advanced
-    GSCALAR(new_parameter_1, "NEW_PARAMETER_1", 0.06f),
+    GSCALAR(user_pit_kp, "USER_PIT_KP", 0.1f),
+    GSCALAR(user_pit_ki, "USER_PIT_KI", 0.0f),
+    GSCALAR(user_pit_kd, "USER_PIT_KD", 0.7f),
 
-    // @Param: NEW_PARAMETER_2
-    // @DisplayName: New Parameter 2
-    // @Description: A description of my new parameter goes here
-    // @Range: -32768 32767
-    // @User: Advanced
-    GSCALAR(new_parameter_2, "NEW_PARAMETER_2", 0.0f),
-
-    // @Param: NEW_PARAMETER_3
-    // @DisplayName: New Parameter 3
-    // @Description: A description of my new parameter goes here
-    // @Range: -32768 32767
-    // @User: Advanced
-    GSCALAR(new_parameter_3, "NEW_PARAMETER_3", 0.02f),
+    GSCALAR(user_parm1, "USER_PARM1", 0.0f),
+    GSCALAR(user_parm2, "USER_PARM2", 0.0f),
+    GSCALAR(user_parm3, "USER_PARM3", 0.0f),
 
     
     AP_VAREND

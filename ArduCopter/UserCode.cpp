@@ -20,8 +20,8 @@ void Copter::userhook_init()
     pid_posx.init(pid_pos_x_param);
     pid_posy.init(pid_pos_y_param);
 
-    v3f_target_control.x = 100.0;
-    v3f_target_control.y = 100.0;
+    v3f_target_control.x = 110.0;
+    v3f_target_control.y = 110.0;
 }
 #endif
  
@@ -186,8 +186,8 @@ void Copter::userhook_FastLoop()
         is_armed = true;
         // v3f_target_control.x = k_pos[0]*100;
         // v3f_target_control.y = k_pos[1]*100;
-        v3f_target_control.x = 100.0;
-        v3f_target_control.y = 100.0;
+        v3f_target_control.x = 110.0;
+        v3f_target_control.y = 110.0;
 
         target_roll = ahrs.roll;
         target_pitch = ahrs.pitch;
@@ -209,9 +209,9 @@ void Copter::userhook_50Hz()
 #ifdef USERHOOK_MEDIUMLOOP
 void Copter::userhook_MediumLoop()
 {
-       //set pid
-    pid_posx.pid_set_k_params(g.new_parameter_1,g.new_parameter_2,g.new_parameter_3);
-    pid_posy.pid_set_k_params(g.new_parameter_1,g.new_parameter_2,g.new_parameter_3);
+    //set pid
+    pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
+    pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
 
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
