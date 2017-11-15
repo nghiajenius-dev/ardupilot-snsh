@@ -900,6 +900,14 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(user_parm2, "USER_PARM2", 0.0f),
     GSCALAR(user_parm3, "USER_PARM3", 0.0f),
 
+    GSCALAR(user_circle_r, "USER_CIRCLE_R", 0.0f),
+    GSCALAR(user_circle_T, "USER_CIRCLE_T", 0.0f),
+
+    GSCALAR(user_hover_x, "USER_HOVER_X", 0.0f),
+    GSCALAR(user_hover_y, "USER_HOVER_Y", 0.0f),
+
+    GSCALAR(user_deadband, "USER_DEADBAND", 0.0f),
+
     
     AP_VAREND
 };

@@ -381,6 +381,15 @@ public:
         k_param_user_parm2, 
         k_param_user_parm3,
 
+        k_param_user_circle_r,
+        k_param_user_circle_T,
+
+        k_param_user_hover_x,
+        k_param_user_hover_y,
+
+        k_param_user_deadband,
+
+
     };
 
     AP_Int16        format_version;
@@ -507,6 +516,14 @@ public:
     AP_Float                user_parm1;
     AP_Float                user_parm2;
     AP_Float                user_parm3;
+
+    AP_Float                user_circle_r;
+    AP_Float                user_circle_T;
+
+    AP_Float                user_hover_x;
+    AP_Float                user_hover_y;
+
+    AP_Float                user_deadband;
 
 
     // Note: keep initializers here in the same order as they are declared

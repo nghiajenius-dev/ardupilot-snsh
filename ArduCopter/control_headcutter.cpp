@@ -149,15 +149,18 @@ void Copter::headcutter_run()
         error_x = -(k_pos[0]*100 - v3f_target_control.x);   //cm
         error_y = (k_pos[1]*100 - v3f_target_control.y);
 
+        if(fabs(error_x) < error_deadband){
+            error_x = 0;
+        }
+        if(fabs(error_y) < error_deadband){
+            error_y = 0;
+        }
+
         pid_roll = pid_posx.pid_process(error_x);           //Uc: control angle [degree]
         pid_pitch = pid_posy.pid_process(error_y);
 
-        // pid_roll *= x_gain;
-        // pid_pitch *= y_gain;
-
         pid_roll *= 100; // centi degree
         pid_pitch *= 100;
-
      
         // calc yaw angle
         yaw_angle = (double)ToRad(ahrs.yaw_sensor)/100 - frame_yaw_offset;  //rad
@@ -167,15 +170,15 @@ void Copter::headcutter_run()
         pid_roll = pid_roll_tmp * cos(yaw_angle) + pid_pitch_tmp * sin(yaw_angle);
         pid_pitch = pid_pitch_tmp * cos(yaw_angle) - pid_roll_tmp * sin(yaw_angle);
 
-        if (pid_roll > 1000)    //limit 15 degree
-            pid_roll = 1000;
-        if (pid_roll < -1000)
-            pid_roll = -1000;
+        if (pid_roll > lean_angle_max)    //limit 15 degree
+            pid_roll = lean_angle_max;
+        if (pid_roll < -lean_angle_max)
+            pid_roll = -lean_angle_max;
 
-        if (pid_pitch > 1000)
-            pid_pitch = 1000;
-        if (pid_pitch < -1000)
-            pid_pitch = -1000;
+        if (pid_pitch > lean_angle_max)
+            pid_pitch = lean_angle_max;
+        if (pid_pitch < -lean_angle_max)
+            pid_pitch = -lean_angle_max;
         
         if(g.user_parm1 == 1){
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());

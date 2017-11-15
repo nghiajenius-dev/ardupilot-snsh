@@ -12,7 +12,7 @@ void Copter::userhook_init()
 
     optflow.init();
     frame_yaw_offset = 0.0f;
-    multirate_kalman_v3_initialize();
+    LPF_pos_initialize();
    
 #ifdef RUN_TRILATERATION
     LeastSquare_NJ_initialize();
@@ -20,8 +20,16 @@ void Copter::userhook_init()
     pid_posx.init(pid_pos_x_param);
     pid_posy.init(pid_pos_y_param);
 
-    v3f_target_control.x = 110.0;
-    v3f_target_control.y = 110.0;
+    v3f_target_control.x = g.user_hover_x;
+    v3f_target_control.y = g.user_hover_y;
+    circle_T = 24;// 24s/round
+    circle_w = 2*PI_NUMBER/circle_T;       
+    circle_step = 0;
+    circle_r = 40;
+    lean_angle_max = 1000;
+    max_inno_m[0] = 10;
+    max_inno_m[1] = 10;
+    max_inno_m[2] = 10;
 }
 #endif
  
@@ -109,7 +117,7 @@ void Copter::userhook_FastLoop()
             nls_healthy = false; 
         }
 
-        // cliSerial->printf("NLS:%.2f,%.2f,%.2f\r\n",(float)R_OP[0],R_OP[1],R_OP[2]);
+        
         // ips_timer = AP_HAL::millis() - ips_timer;   
         // hal.uartF->printf("NLS: %d, %d, %d, %d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2],ips_timer);  
         // hal.uartF->printf("NLS: %d,%d,%d,%d,%d\r\n",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);  
@@ -155,18 +163,26 @@ void Copter::userhook_FastLoop()
 
     if(nls_healthy){
         // Convert mm -> m
+        ips_timer = AP_HAL::millis() - ips_timer; 
+        // cliSerial->printf("%d\r\n",ips_timer);
         R_OP[0] /= 1000; 
         R_OP[1] /= 1000;
         R_OP[2] /= 1000; 
+
+        nls_timeout_s = (double)(AP_HAL::millis() - _nls_timeout_s)/1000;
+        _nls_timeout_s = (double)AP_HAL::millis();
+        // cliSerial->printf("%.3f\r\n",nls_timeout_s);
     }
-    // else{
+    else{
+        nls_timeout_s = (double)(AP_HAL::millis() - _nls_timeout_s)/1000;
+        // cliSerial->printf("%.3f\r\n",nls_timeout_s);
     //     R_OP[0] = 0; 
     //     R_OP[1] = 0;
     //     R_OP[2] = 0;
-    // }     
+    }     
     
     // KALMAN
-    multirate_kalman_v3(R_OP,nls_healthy,k_pos);
+    LPF_pos(R_OP,nls_healthy,0,max_inno_m, nls_timeout_s,k_pos);
     s16_range_finder = (int)(k_pos[2]*100);    
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
     AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
@@ -181,21 +197,53 @@ void Copter::userhook_FastLoop()
     }
 	// hal.uartF->printf("K: %.2f, %.2f, %.2f, %d\r\n",k_pos[0],k_pos[1],k_pos[2],k_timer);
 
+    // SET VALUE WHEN ARMED
     if (motors->armed() && !is_armed)
     {
         is_armed = true;
         // v3f_target_control.x = k_pos[0]*100;
         // v3f_target_control.y = k_pos[1]*100;
-        v3f_target_control.x = 110.0;
-        v3f_target_control.y = 110.0;
+        v3f_target_control.x = g.user_hover_x;
+        v3f_target_control.y = g.user_hover_y;
 
         target_roll = ahrs.roll;
         target_pitch = ahrs.pitch;
         frame_yaw_offset = (double)ToRad(ahrs.yaw_sensor)/100;
+
+        //reduce max_inno_m on flight
+        max_inno_m[0] = 0.8;
+        max_inno_m[1] = 0.8;
+        max_inno_m[2] = 0.8;
         
-        cliSerial->printf("TARGET_POS: %.2f, %.2f \n",v3f_target_control.x , v3f_target_control.y);
+        // cliSerial->printf("TARGET_POS: %.2f, %.2f \n",v3f_target_control.x , v3f_target_control.y);
     } else if (!motors->armed() && is_armed ) is_armed = false;
     
+    // ADD TRAJECTORY
+    if(g.user_parm2 == 0){                      // HOVER [cm]
+        circle_step = 0;
+        v3f_target_control.x = g.user_hover_x;
+        v3f_target_control.y = g.user_hover_y;
+    }
+
+    else if(g.user_parm2 == 1){                 // CIRCLE [cm]
+        circle_x  = 105 + circle_r * cos(circle_w * circle_step - PI_NUMBER);
+        circle_y  = 105 - circle_r * sin(circle_w * circle_step - PI_NUMBER);
+        
+        circle_step = circle_step + 0.01;  //increase @100Hz
+        if(circle_step > circle_T){
+            circle_step -= circle_T;
+        }
+
+        // Update target pos
+        v3f_target_control.x = circle_x;
+        v3f_target_control.y = circle_y;           
+    }
+
+    else{
+        circle_step = 0;
+        v3f_target_control.x = g.user_hover_x;
+        v3f_target_control.y = g.user_hover_y;
+    }
 
 }
 #endif
@@ -214,6 +262,13 @@ void Copter::userhook_MediumLoop()
     pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
     pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
 
+    circle_r = g.user_circle_r;
+    circle_T = g.user_circle_T;
+    circle_w = 2*PI_NUMBER/circle_T; 
+
+    error_deadband = g.user_deadband;   //cm
+
+    lean_angle_max = g.user_parm3;
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
     // air_temperature = barometer.get_temperature();
@@ -221,7 +276,7 @@ void Copter::userhook_MediumLoop()
 
 //==============================IPS_TRANSMIT======================================//
     hal.uartE->printf("{PARAM,TRIGGER_US}\n");
-    // ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
+    ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
 }
 #endif
 

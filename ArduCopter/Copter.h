@@ -145,10 +145,15 @@ extern "C"{
 #include "multirate_kalman_v3_terminate.h"
 #include "multirate_kalman_v3_initialize.h"
 
+#include "LPF_pos.h"
+#include "LPF_pos_types.h"
+#include "LPF_pos_terminate.h"
+#include "LPF_pos_initialize.h"    
+
 #include "LeastSquare_NJ.h"
 #include "LeastSquare_NJ_types.h"
 #include "LeastSquare_NJ_terminate.h"
-#include "LeastSquare_NJ_initialize.h"    
+#include "LeastSquare_NJ_initialize.h"  
 }
 
 #include "pid.h"
