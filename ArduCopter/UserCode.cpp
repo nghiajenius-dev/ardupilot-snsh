@@ -13,6 +13,7 @@ void Copter::userhook_init()
     optflow.init();
     frame_yaw_offset = 0.0f;
     LPF_pos_initialize();
+    hal.uartD->begin(115200);
    
 #ifdef RUN_TRILATERATION
     LeastSquare_NJ_initialize();
@@ -183,6 +184,8 @@ void Copter::userhook_FastLoop()
     
     // KALMAN
     LPF_pos(R_OP,nls_healthy,0,max_inno_m, nls_timeout_s,k_pos);
+    hal.uartD->printf("{""x"":%d,""y"":%d,""z"":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100));
+
     s16_range_finder = (int)(k_pos[2]*100);    
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
     AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
