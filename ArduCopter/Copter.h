@@ -154,6 +154,8 @@ extern "C"{
 #include "LeastSquare_NJ_types.h"
 #include "LeastSquare_NJ_terminate.h"
 #include "LeastSquare_NJ_initialize.h"  
+
+#include "js0n.h"    
 }
 
 #include "pid.h"

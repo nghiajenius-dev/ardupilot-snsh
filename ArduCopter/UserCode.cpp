@@ -21,8 +21,11 @@ void Copter::userhook_init()
     pid_posx.init(pid_pos_x_param);
     pid_posy.init(pid_pos_y_param);
 
+    // DEFAULT HOVER TARGET
     v3f_target_control.x = g.user_hover_x;
     v3f_target_control.y = g.user_hover_y;
+
+
     circle_T = 24;// 24s/round
     circle_w = 2*PI_NUMBER/circle_T;       
     circle_step = 0;
@@ -46,6 +49,7 @@ void Copter::userhook_FastLoop()
     //================================IPS====================================//
     // Get available bytes
     ips_bytes = hal.uartF->available();
+
     while (ips_bytes-- > 0) {
         // Get data string here
         ips_char[0] = hal.uartF->read();
@@ -81,6 +85,8 @@ void Copter::userhook_FastLoop()
             }
         }
     }
+
+
 //================================NLS====================================//
   // ips_flag = 1;
   // [121.8, 120.4, 185.4, 185.5, 92.9];
@@ -127,7 +133,7 @@ void Copter::userhook_FastLoop()
     ips_flag = 0; 
 
 //==============================PX4FLOW======================================//
-    // optflow.update();
+    optflow.update();
     // Vector2f opt_flowRate = optflow.flowRate();
     // Vector2f opt_bodyRate = optflow.bodyRate();
     // uint32_t opt_integration_timespan = optflow.integration_timespan();
@@ -184,7 +190,6 @@ void Copter::userhook_FastLoop()
     
     // KALMAN
     LPF_pos(R_OP,nls_healthy,0,max_inno_m, nls_timeout_s,k_pos);
-    hal.uartD->printf("{""x"":%d,""y"":%d,""z"":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100));
 
     s16_range_finder = (int)(k_pos[2]*100);    
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
@@ -204,10 +209,6 @@ void Copter::userhook_FastLoop()
     if (motors->armed() && !is_armed)
     {
         is_armed = true;
-        // v3f_target_control.x = k_pos[0]*100;
-        // v3f_target_control.y = k_pos[1]*100;
-        v3f_target_control.x = g.user_hover_x;
-        v3f_target_control.y = g.user_hover_y;
 
         target_roll = ahrs.roll;
         target_pitch = ahrs.pitch;
@@ -224,8 +225,9 @@ void Copter::userhook_FastLoop()
     // ADD TRAJECTORY
     if(g.user_parm2 == 0){                      // HOVER [cm]
         circle_step = 0;
-        v3f_target_control.x = g.user_hover_x;
-        v3f_target_control.y = g.user_hover_y;
+        // v3f_target_control.x = g.user_hover_x;
+        // v3f_target_control.y = g.user_hover_y;
+        // Update from GUI
     }
 
     else if(g.user_parm2 == 1){                 // CIRCLE [cm]
@@ -242,10 +244,11 @@ void Copter::userhook_FastLoop()
         v3f_target_control.y = circle_y;           
     }
 
-    else{
+    else{                                        // HOVER [cm]
         circle_step = 0;
-        v3f_target_control.x = g.user_hover_x;
-        v3f_target_control.y = g.user_hover_y;
+        // v3f_target_control.x = g.user_hover_x;
+        // v3f_target_control.y = g.user_hover_y;
+        // Update from GUI
     }
 
 }
@@ -270,7 +273,6 @@ void Copter::userhook_MediumLoop()
     circle_w = 2*PI_NUMBER/circle_T; 
 
     error_deadband = g.user_deadband;   //cm
-
     lean_angle_max = g.user_parm3;
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
@@ -280,6 +282,59 @@ void Copter::userhook_MediumLoop()
 //==============================IPS_TRANSMIT======================================//
     hal.uartE->printf("{PARAM,TRIGGER_US}\n");
     ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
+
+//==============================GUI_PLANNER======================================//
+    // SEND POSITION TO GUI
+    hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
+
+    // GET TARGET FROM GUI
+    gui_bytes = hal.uartD->available();
+    // 
+    // value = js0n("x", 0, gui_str , strlen(gui_str), &valen);
+    // atoi(value);
+
+    while (gui_bytes-- > 0) {
+        // Get data string here
+        gui_char[0] = hal.uartD->read();
+        // start-of-frame
+        if(gui_char[0] == '{'){
+            gui_char[1] = gui_char[0];
+            gui_buff = 2;
+            gui_state = 1;
+        }
+        else if((gui_state==1) && (gui_char[0] == '}')){   // end-of-frame: start parsing
+            gui_char[gui_buff] = gui_char[0];
+
+            gui_flag = 1;   // NEW TARGET UPDATE
+            // hal.uartD->printf("%s",&gui_char[1]);
+
+            j_value = js0n("tx", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
+            if(j_value != NULL){
+                // hal.uartD->printf("x:%d",(int)atoi(j_value));
+                gui_target = (int)atoi(j_value);
+                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM))
+                    v3f_target_control.x = gui_target;
+            }
+
+            j_value = js0n("ty", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
+            if(j_value != NULL){
+                // hal.uartD->printf("y:%d",(int)atoi(j_value));
+                gui_target = (int)atoi(j_value);
+                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM))
+                    v3f_target_control.y = gui_target;
+            }
+            
+            gui_buff = 0;
+            gui_state = 0;
+        }
+        else{   // fill buffer after catch start header
+            if(gui_state == 1){
+                gui_char[gui_buff] = gui_char[0];
+                gui_buff++;
+            }
+        }
+    }    
+
 }
 #endif
 

@@ -7,6 +7,7 @@
 #define BUFFER_FRAME_SIZE   500
 #define MAX_REV_NODE		5
 #define PI_NUMBER 			3.14159f
+
 // IPS
 #define RUN_TRILATERATION
 uint16_t ips_bytes;
@@ -58,20 +59,28 @@ bool nls_healthy;
 
 volatile uint16_t s16_range_finder;
 
-
 // TRAJECTORY
 float circle_r, circle_w, circle_step;
 float circle_T;
 float circle_x, circle_y, circle_cnt;
-
 float lean_angle_max;
+
+// GUI/PLANNER
+uint16_t gui_bytes;
+char gui_char[BUFFER_FRAME_SIZE];
+int gui_target;
+#define MIN_FENCE_CM 		40
+#define MAX_FENCE_CM 		180
+
+int gui_flag;
+uint16_t gui_buff;
+uint16_t gui_state;
 
 // PID
 Vector3f v3f_target_control;
 float target_roll = 0.0f;
 float target_pitch = 0.0f;
 bool is_armed = false;
-
 float error_deadband;
 
 PID::PID_PARAMETERS pid_pos_x_param = {.Kp = 0.05, .Ki = 0.0, .Kd = 0.005,
@@ -81,6 +90,9 @@ PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 0.05, .Ki = 0.0, .Kd = 0.005,
 
 PID pid_posx;
 PID pid_posy;
+
+size_t j_valen;
+const char* j_value;
 
 // #if WII_CAMERA == 1
 // WiiCamera           ircam;
