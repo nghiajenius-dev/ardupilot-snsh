@@ -907,6 +907,8 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(user_hover_y, "USER_HOVER_Y", 0.0f),
 
     GSCALAR(user_deadband, "USER_DEADBAND", 0.0f),
+    
+    GSCALAR(user_raw_log, "USER_RAW_LOG", 0.0f),
 
     
     AP_VAREND

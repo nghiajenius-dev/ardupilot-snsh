@@ -389,7 +389,7 @@ public:
 
         k_param_user_deadband,
 
-
+        k_param_user_raw_log,
     };
 
     AP_Int16        format_version;
@@ -524,6 +524,8 @@ public:
     AP_Float                user_hover_y;
 
     AP_Float                user_deadband;
+
+    AP_Float                user_raw_log;
 
 
     // Note: keep initializers here in the same order as they are declared

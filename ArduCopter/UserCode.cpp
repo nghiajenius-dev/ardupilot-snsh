@@ -1,6 +1,5 @@
 #include "Copter.h"
 
-
 #ifdef USERHOOK_INIT
 void Copter::userhook_init()
 {
@@ -70,7 +69,7 @@ void Copter::userhook_FastLoop()
             for(int i = 0; i < MAX_REV_NODE; i++){
                 nlsMR[i] = (calib_a[i] * ips_data[i] + calib_k[i]) * 10;    //mm
             }
-            
+       
             // cliSerial->printf("R:%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4]);
             // cliSerial->printf("D:%.0f,%.0f,%.0f,%.0f,%.0f\r\n",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);
             ips_flag = 1;   // finish convert data --> start NLS
@@ -134,16 +133,16 @@ void Copter::userhook_FastLoop()
 
 //==============================PX4FLOW======================================//
     optflow.update();
-    // Vector2f opt_flowRate = optflow.flowRate();
-    // Vector2f opt_bodyRate = optflow.bodyRate();
+    Vector2f opt_flowRate = optflow.flowRate();
+    Vector2f opt_bodyRate = optflow.bodyRate();
     // uint32_t opt_integration_timespan = optflow.integration_timespan();
     // float bodyRateZ = optflow.bodyRateZ();
 
-    // opt_flow[0]= opt_flowRate.x;
-    // opt_flow[1]= opt_flowRate.y;
+    opt_flow[0]= opt_flowRate.x;
+    opt_flow[1]= opt_flowRate.y;
 
-    // opt_gyro[0] = opt_bodyRate.x;
-    // opt_gyro[1] = opt_bodyRate.y;
+    opt_gyro[0] = opt_bodyRate.x;
+    opt_gyro[1] = opt_bodyRate.y;
     // opt_gyro[2] = bodyRateZ;
     // cliSerial->printf("%f,%f,%f,%f,%d\r\n",opt_flowRate.x,opt_flowRate.y,opt_bodyRate.x,opt_bodyRate.y,opt_integration_timespan);
 
@@ -190,6 +189,25 @@ void Copter::userhook_FastLoop()
     
     // KALMAN
     LPF_pos(R_OP,nls_healthy,0,max_inno_m, nls_timeout_s,k_pos);
+    
+    // DEBUG LOG
+    if(g.user_raw_log == 1){    
+        ahrs.get_NavEKF2().getEulerAngles(-1,imu_euler);
+        ahrs.get_NavEKF2().getVelNED(-1,imu2_velNED);
+        ahrs.get_NavEKF3().getVelNED(-1,imu3_velNED);
+        // roll    : (int16_t)(100*degrees(euler.x)), // roll angle (centi-deg, displayed as deg due to format string)
+        // pitch   : (int16_t)(100*degrees(euler.y)), // pitch angle (centi-deg, displayed as deg due to format string)
+        // yaw     : (uint16_t)wrap_360_cd(100*degrees(euler.z)), // yaw angle (centi-deg, displayed as deg due to format string)
+        // velN    : (float)(velNED.x), // velocity North (m/s)
+        // velE    : (float)(velNED.y), // velocity East (m/s)
+        // velD    : (float)(velNED.z), // velocity Down (m/s)
+
+        hal.uartD->printf("%d %.2f %.2f %.2f %d %.2f %.2f %.2f %.2f %.2f ",AP_HAL::millis(),R_OP[0],R_OP[1],R_OP[2],nls_healthy,opt_flow[0],opt_flow[1],opt_gyro[0],opt_gyro[1],(double)ToRad(ahrs.yaw_sensor)/100);
+        hal.uartD->printf("%.2f %.2f %.2f ",imu_euler.x,imu_euler.y,imu_euler.z);
+        hal.uartD->printf("%.2f %.2f %.2f ",imu2_velNED.x,imu2_velNED.y,imu2_velNED.z);
+        hal.uartD->printf("%.2f %.2f %.2f ",imu3_velNED.x,imu3_velNED.y,imu3_velNED.z);
+        hal.uartD->printf("\r\n");
+    }
 
     s16_range_finder = (int)(k_pos[2]*100);    
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
@@ -197,7 +215,7 @@ void Copter::userhook_FastLoop()
     AP_Notify::flags.ips_z = (int)(k_pos[2]*100);
     // k_timer = AP_HAL::micros()-k_timer;  
     //DATA Flash
-    Log_Write_NLS_KAL(R_OP[0],R_OP[1],R_OP[2],(float)nls_healthy);
+    // Log_Write_NLS_KAL(R_OP[0],R_OP[1],R_OP[2],(float)nls_healthy);
     // reset nls_healthy after kalman
     // cliSerial->printf("%.2f,%.2f,%.2f,%.1f\r\n",k_pos[0],k_pos[1],k_pos[2],(double)ToDeg(yaw_angle));
     if(nls_healthy){
@@ -285,8 +303,9 @@ void Copter::userhook_MediumLoop()
 
 //==============================GUI_PLANNER======================================//
     // SEND POSITION TO GUI
-    hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
-
+    if(g.user_raw_log == 0){    
+        hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
+    }
     // GET TARGET FROM GUI
     gui_bytes = hal.uartD->available();
     // 

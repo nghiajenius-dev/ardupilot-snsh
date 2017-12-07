@@ -28,6 +28,11 @@ Vector2f opt_flowRate;
 Vector2f opt_bodyRate;
 uint32_t opt_integration_timespan;
 
+// IMU ODOMETRY
+Vector3f imu_euler;
+Vector3f imu2_velNED;
+Vector3f imu3_velNED;
+
 // KALMAN
 double opt_flow[2];
 double opt_gyro[2];
