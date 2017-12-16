@@ -2,7 +2,7 @@
  * File: LPF_pos_types.h
  *
  * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 14-Nov-2017 13:54:11
+ * C/C++ source code generated on  : 16-Dec-2017 17:57:04
  */
 
 #ifndef LPF_POS_TYPES_H

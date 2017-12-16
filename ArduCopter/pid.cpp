@@ -31,7 +31,7 @@ float PID::pid_process(float error)
     pid_param.u_ = pid_param.u;
 
     dPart = (pid_param.Kd / pid_param.Ts) * (pid_param.e - (2 * pid_param.e_) + pid_param.e__);
-    dPart = dPart_ + 0.1175 * (dPart - dPart_);
+    dPart = dPart_ + 0.01242 * (dPart - dPart_);    // 5Hz LPF
     pid_param.u = pid_param.u_ 
             + pid_param.Kp * (pid_param.e - pid_param.e_)
             + pid_param.Ki * pid_param.Ts * pid_param.e

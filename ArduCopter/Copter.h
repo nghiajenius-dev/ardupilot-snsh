@@ -140,10 +140,10 @@ extern "C"{
 #include "rt_nonfinite.h"
 #include "rtwtypes.h"
 
-#include "multirate_kalman_v3.h"
-#include "multirate_kalman_v3_types.h"
-#include "multirate_kalman_v3_terminate.h"
-#include "multirate_kalman_v3_initialize.h"
+#include "multirate_kalman_v4.h"
+#include "multirate_kalman_v4_types.h"
+#include "multirate_kalman_v4_terminate.h"
+#include "multirate_kalman_v4_initialize.h"
 
 #include "LPF_pos.h"
 #include "LPF_pos_types.h"

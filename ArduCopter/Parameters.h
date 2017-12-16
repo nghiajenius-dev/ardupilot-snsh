@@ -378,8 +378,8 @@ public:
         k_param_user_pit_kd,
 
         k_param_user_parm1,
-        k_param_user_parm2, 
-        k_param_user_parm3,
+        k_param_user_lean_max, 
+        k_param_user_trajectory,
 
         k_param_user_circle_r,
         k_param_user_circle_T,
@@ -387,7 +387,8 @@ public:
         k_param_user_hover_x,
         k_param_user_hover_y,
 
-        k_param_user_deadband,
+        k_param_user_kalman_type,
+        k_param_user_lpf,
 
         k_param_user_raw_log,
     };
@@ -514,8 +515,8 @@ public:
     AP_Float                user_pit_kd;
 
     AP_Float                user_parm1;
-    AP_Float                user_parm2;
-    AP_Float                user_parm3;
+    AP_Float                user_lean_max;
+    AP_Float                user_trajectory;
 
     AP_Float                user_circle_r;
     AP_Float                user_circle_T;
@@ -523,7 +524,8 @@ public:
     AP_Float                user_hover_x;
     AP_Float                user_hover_y;
 
-    AP_Float                user_deadband;
+    AP_Float                user_kalman_type;
+    AP_Float                user_lpf;
 
     AP_Float                user_raw_log;
 

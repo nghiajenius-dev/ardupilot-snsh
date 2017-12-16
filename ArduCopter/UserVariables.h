@@ -38,6 +38,7 @@ double opt_flow[2];
 double opt_gyro[2];
 double lidar_h;
 double k_pos[3];
+double k_vel[3];
 uint32_t k_timer;
 double ins_att[3];		//roll, pitch, yaw
 double yaw_angle;		//[rad]
@@ -49,7 +50,11 @@ double nls_timeout_s,_nls_timeout_s; //s
 const double calib_a[5] = { 0.8641, 0.8672, 0.8641, 0.8652, 0.8649 };      // CD->G
 const double calib_k[5] = { 4.891, 3.848, 5.756, 4.71, 5.226 };             // CD->G
 double R_OP[3];
-const double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
+// const double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
+const double nlsRCM[15] = {	1142.024, 2138.445, 1176.012, 117.919, 1153.541, 
+							96.631, 1131.724, 2159.180, 1161.486, 1155.122, 
+							2064.740, 2064.873, 2064.116, 2064.722, 1872.179};
+
 double nlsMR[5];
 double tempRCM[15];
 double tempMR[5];
@@ -61,7 +66,7 @@ bool nls_healthy;
 // uint16_t maxMR;
 // int c_i, c_j, c_k;
 // int max_NOR, max_index;
-
+float kalman_type;
 volatile uint16_t s16_range_finder;
 
 // TRAJECTORY
@@ -95,6 +100,14 @@ PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 0.05, .Ki = 0.0, .Kd = 0.005,
 
 PID pid_posx;
 PID pid_posy;
+
+
+// PID 2
+float d2_target, pos_kp, h_accel_cms, h_speed_cms, linear_d, d_target, vel_target_x, vel_target_y;
+float h_dt, accel_feedforward_x, accel_feedforward_y, h_vel_last_x, h_vel_last_y, h_vel_error_x, h_vel_error_y, h_vel_error_x_, h_vel_error_y_, accel_target_x, accel_target_y;
+float lean_ang_max, accel_max, h_accel_total, accel_target_x_, accel_target_y_, h_accel_forward, h_accel_right, h_pitch_target, cos_pitch_target, h_roll_target;
+float pid_roll, pid_pitch;
+
 
 size_t j_valen;
 const char* j_value;

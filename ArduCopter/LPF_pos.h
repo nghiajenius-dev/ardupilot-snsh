@@ -2,7 +2,7 @@
  * File: LPF_pos.h
  *
  * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 14-Nov-2017 13:54:11
+ * C/C++ source code generated on  : 16-Dec-2017 17:57:04
  */
 
 #ifndef LPF_POS_H
@@ -17,7 +17,8 @@
 
 /* Function Declarations */
 extern void LPF_pos( double ips_pos[3], short ips_flag, double delay_ms,
-                     double max_inno[3], double last_timeout, double k_pos[3]);
+                     double max_inno[3], double last_timeout, double k_pos
+                    [3], double k_vel[3]);
 extern void LPF_pos_init(void);
 extern void x_pred_not_empty_init(void);
 

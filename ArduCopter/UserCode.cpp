@@ -12,6 +12,7 @@ void Copter::userhook_init()
     optflow.init();
     frame_yaw_offset = 0.0f;
     LPF_pos_initialize();
+    multirate_kalman_v4_initialize();
     hal.uartD->begin(115200);
    
 #ifdef RUN_TRILATERATION
@@ -164,6 +165,9 @@ void Copter::userhook_FastLoop()
     // cliSerial->printf("%.1f,%.1f\r\n",(double)ToDeg(frame_yaw_offset),(double)ToDeg(yaw_angle));
     // hal.uartF->printf("INS:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",ips_gyro.x,ips_gyro.y,ips_gyro.z,ips_accel.x,ips_accel.y,ips_accel.z);
 
+//==============================YAW-ANGLE======================================//
+    // calc yaw angle
+    yaw_angle = (double)ToRad(ahrs.yaw_sensor)/100 - frame_yaw_offset;  //rad
 //==============================KALMAN======================================//
     // k_timer = AP_HAL::micros();
 
@@ -188,7 +192,13 @@ void Copter::userhook_FastLoop()
     }     
     
     // KALMAN
-    LPF_pos(R_OP,nls_healthy,0,max_inno_m, nls_timeout_s,k_pos);
+    if(kalman_type == 0){
+        LPF_pos(R_OP,nls_healthy,0,max_inno_m, nls_timeout_s,k_pos,k_vel);
+    }
+    else{
+        multirate_kalman_v4(R_OP, nls_healthy, opt_flow, opt_gyro, -yaw_angle, k_pos, k_vel);
+
+    }
     
     // DEBUG LOG
     if(g.user_raw_log == 1){    
@@ -202,10 +212,10 @@ void Copter::userhook_FastLoop()
         // velE    : (float)(velNED.y), // velocity East (m/s)
         // velD    : (float)(velNED.z), // velocity Down (m/s)
 
-        hal.uartD->printf("%d %.2f %.2f %.2f %d %.2f %.2f %.2f %.2f %.2f ",AP_HAL::millis(),R_OP[0],R_OP[1],R_OP[2],nls_healthy,opt_flow[0],opt_flow[1],opt_gyro[0],opt_gyro[1],(double)ToRad(ahrs.yaw_sensor)/100);
+        hal.uartD->printf("%d %.2f %.2f %.2f %d %.2f %.2f %.2f %.2f %.2f ",AP_HAL::millis64(),R_OP[0],R_OP[1],R_OP[2],nls_healthy,opt_flow[0],opt_flow[1],opt_gyro[0],opt_gyro[1],(double)ToRad(ahrs.yaw_sensor)/100);
         hal.uartD->printf("%.2f %.2f %.2f ",imu_euler.x,imu_euler.y,imu_euler.z);
         hal.uartD->printf("%.2f %.2f %.2f ",imu2_velNED.x,imu2_velNED.y,imu2_velNED.z);
-        hal.uartD->printf("%.2f %.2f %.2f ",imu3_velNED.x,imu3_velNED.y,imu3_velNED.z);
+        // hal.uartD->printf("%.2f %.2f %.2f ",imu3_velNED.x,imu3_velNED.y,imu3_velNED.z);
         hal.uartD->printf("\r\n");
     }
 
@@ -241,14 +251,14 @@ void Copter::userhook_FastLoop()
     } else if (!motors->armed() && is_armed ) is_armed = false;
     
     // ADD TRAJECTORY
-    if(g.user_parm2 == 0){                      // HOVER [cm]
+    if(g.user_trajectory == 0){                      // HOVER [cm]
         circle_step = 0;
         // v3f_target_control.x = g.user_hover_x;
         // v3f_target_control.y = g.user_hover_y;
         // Update from GUI
     }
 
-    else if(g.user_parm2 == 1){                 // CIRCLE [cm]
+    else if(g.user_trajectory == 1){                 // CIRCLE [cm]
         circle_x  = 105 + circle_r * cos(circle_w * circle_step - PI_NUMBER);
         circle_y  = 105 - circle_r * sin(circle_w * circle_step - PI_NUMBER);
         
@@ -282,6 +292,9 @@ void Copter::userhook_50Hz()
 #ifdef USERHOOK_MEDIUMLOOP
 void Copter::userhook_MediumLoop()
 {
+    // debug PID 2
+    // cliSerial->printf("p:%f %f %f\r\n",pid_pitch, pid_roll, d_target);
+
     //set pid
     pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
     pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
@@ -290,8 +303,8 @@ void Copter::userhook_MediumLoop()
     circle_T = g.user_circle_T;
     circle_w = 2*PI_NUMBER/circle_T; 
 
-    error_deadband = g.user_deadband;   //cm
-    lean_angle_max = g.user_parm3;
+    lean_angle_max = g.user_lean_max;
+    kalman_type = g.user_kalman_type;
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
     // air_temperature = barometer.get_temperature();
@@ -304,7 +317,9 @@ void Copter::userhook_MediumLoop()
 //==============================GUI_PLANNER======================================//
     // SEND POSITION TO GUI
     if(g.user_raw_log == 0){    
-        hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
+        hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
+        // hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
+   
     }
     // GET TARGET FROM GUI
     gui_bytes = hal.uartD->available();
@@ -331,18 +346,25 @@ void Copter::userhook_MediumLoop()
             if(j_value != NULL){
                 // hal.uartD->printf("x:%d",(int)atoi(j_value));
                 gui_target = (int)atoi(j_value);
-                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM))
-                    v3f_target_control.x = gui_target;
+                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM)){                    
+                    // ONLY ACCEPT TARGET ON GUIDE MODE
+                    if(g.user_trajectory == 0){     
+                        v3f_target_control.x = gui_target;
+                    }
+                }
             }
 
             j_value = js0n("ty", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
             if(j_value != NULL){
                 // hal.uartD->printf("y:%d",(int)atoi(j_value));
                 gui_target = (int)atoi(j_value);
-                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM))
-                    v3f_target_control.y = gui_target;
+                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM)){
+                    // ONLY ACCEPT TARGET ON GUIDE MODE
+                    if(g.user_trajectory == 0){     
+                        v3f_target_control.y = gui_target;
+                    }
+                }
             }
-            
             gui_buff = 0;
             gui_state = 0;
         }

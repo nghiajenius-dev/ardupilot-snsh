@@ -2,7 +2,7 @@
  * File: LPF_pos.c
  *
  * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 14-Nov-2017 13:54:11
+ * C/C++ source code generated on  : 16-Dec-2017 17:57:04
  */
 
 /* Include Files */
@@ -25,16 +25,20 @@ static double v_post[3];
  *                const double max_inno[3]
  *                double last_timeout
  *                double k_pos[3]
+ *                double k_vel[3]
  * Return Type  : void
  */
-void LPF_pos(double ips_pos[3], short ips_flag, double delay_ms, 
-             double max_inno[3], double last_timeout, double k_pos[3])
+void LPF_pos( double ips_pos[3], short ips_flag, double delay_ms, 
+             double max_inno[3], double last_timeout, double k_pos[3], double
+             k_vel[3])
 {
   int i;
   double x_pred;
   double inno;
 
   /*  function [k_pos, inno] = LPF_pos(ips_pos,ips_flag,delay_ms,max_inno,last_timeout) */
+  /* [second] */
+  /*  LPF_vel_k = 0.09516;    %10hz */
   /*  max_inno = 0.1; %m */
   /*  Init value */
   if (!x_pred_not_empty) {
@@ -42,11 +46,17 @@ void LPF_pos(double ips_pos[3], short ips_flag, double delay_ms,
     for (i = 0; i < 3; i++) {
       x_post[i] = ips_pos[i];
     }
+
+    /*      v_post_ = zeros(3, 1); */
   }
 
   /*  LFP */
   if (ips_flag == 1) {
     x_pred_not_empty = true;
+
+    /*      % Apply LPF for raw vel */
+    /*      v_post = v_post_ +  LPF_vel_k * (v_post - v_post_);   */
+    /*      v_post_ = v_post; */
     for (i = 0; i < 3; i++) {
       x_pred = x_post[i] + 0.01 * v_pred[i];
       inno = v_pred[i] * delay_ms / 1000.0;
@@ -61,6 +71,7 @@ void LPF_pos(double ips_pos[3], short ips_flag, double delay_ms,
       }
 
       k_pos[i] = x_post[i];
+      k_vel[i] = v_post[i];
     }
   } else {
     if (last_timeout > 0.2) {
@@ -70,11 +81,16 @@ void LPF_pos(double ips_pos[3], short ips_flag, double delay_ms,
     }
 
     x_pred_not_empty = true;
+
+    /*      % Apply LPF for raw vel */
+    /*      v_post = v_post_ +  LPF_vel_k * (v_post - v_post_);   */
+    /*      v_post_ = v_post; */
     for (i = 0; i < 3; i++) {
       x_pred = 0.01 * v_pred[i];
       v_pred[i] = v_post[i];
       x_post[i] += x_pred;
       k_pos[i] = x_post[i];
+      k_vel[i] = v_post[i];
     }
   }
 }

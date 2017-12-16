@@ -897,8 +897,8 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(user_pit_kd, "USER_PIT_KD", 0.7f),
 
     GSCALAR(user_parm1, "USER_PARM1", 0.0f),
-    GSCALAR(user_parm2, "USER_PARM2", 0.0f),
-    GSCALAR(user_parm3, "USER_PARM3", 0.0f),
+    GSCALAR(user_lean_max, "USER_LEAN_MAX", 0.0f),
+    GSCALAR(user_trajectory, "USER_TRAJECTORY", 0.0f),
 
     GSCALAR(user_circle_r, "USER_CIRCLE_R", 0.0f),
     GSCALAR(user_circle_T, "USER_CIRCLE_T", 0.0f),
@@ -906,8 +906,9 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(user_hover_x, "USER_HOVER_X", 0.0f),
     GSCALAR(user_hover_y, "USER_HOVER_Y", 0.0f),
 
-    GSCALAR(user_deadband, "USER_DEADBAND", 0.0f),
-    
+    GSCALAR(user_kalman_type, "USER_KALMAN_TYPE", 0.0f),
+    GSCALAR(user_lpf, "USER_LPF", 0.0f),
+  
     GSCALAR(user_raw_log, "USER_RAW_LOG", 0.0f),
 
     
