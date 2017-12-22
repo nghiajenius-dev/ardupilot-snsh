@@ -17,6 +17,7 @@ public:
         float u;
         float u_;
     } PID_PARAMETERS;
+    float pid_lpf_value;
     
     void init(PID_PARAMETERS param);
     float pid_process(float error);

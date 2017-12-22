@@ -30,11 +30,17 @@ float PID::pid_process(float error)
     pid_param.e = error;
     pid_param.u_ = pid_param.u;
 
+    intergral = pid_param.Ki * pid_param.Ts * pid_param.e;
+    if (intergral > 5)
+        intergral = 5;
+    else if (intergral < -5)
+        intergral = -5;
+
     dPart = (pid_param.Kd / pid_param.Ts) * (pid_param.e - (2 * pid_param.e_) + pid_param.e__);
-    dPart = dPart_ + 0.01242 * (dPart - dPart_);    // 5Hz LPF
+    dPart = dPart_ + pid_lpf_value * (dPart - dPart_);    // 50Hz LPF @400Hz
     pid_param.u = pid_param.u_ 
             + pid_param.Kp * (pid_param.e - pid_param.e_)
-            + pid_param.Ki * pid_param.Ts * pid_param.e
+            + intergral
             + dPart;
 
     dPart_ = dPart;

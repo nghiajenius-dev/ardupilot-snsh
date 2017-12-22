@@ -146,158 +146,150 @@ void Copter::headcutter_run()
 
         //THIS IS A BIG HACK
     ////////////////////////////////////PID CONTROL 1////////////////////////////////////////////////
-        error_x = -(k_pos[0]*100 - v3f_target_control.x);   //cm
-        error_y = (k_pos[1]*100 - v3f_target_control.y);
-    
-        pid_roll = pid_posx.pid_process(error_x);           //Uc: control angle [degree]
-        pid_pitch = pid_posy.pid_process(error_y);
+        if(pid_mode == 0){
+            error_x = v3f_target_control.x - k_pos[0]*100;   //cm
+            error_y = v3f_target_control.y - k_pos[1]*100;
 
-        pid_roll *= 100; // centi degree
-        pid_pitch *= 100;
+            pid_roll = pid_posx.pid_process(error_x);           //Uc: control angle [degree]
+            pid_pitch = pid_posy.pid_process(-error_y);
 
-        // lean_angle_max limit [centi-deg]
-        h_accel_total = sqrt(pid_roll*pid_roll + pid_pitch*pid_pitch);
-        if (h_accel_total > lean_angle_max * sqrt(2)) {
-        pid_roll = lean_angle_max * pid_roll/h_accel_total;
-        pid_pitch = lean_angle_max * pid_pitch/h_accel_total;
-        } 
+            pid_roll *= 100; // centi degree
+            pid_pitch *= 100;
 
-        // Coordinate Rotate
-        pid_roll_tmp = pid_roll;
-        pid_pitch_tmp = pid_pitch;
+            // lean_angle_max limit [centi-deg]
+            h_accel_total = sqrt(pid_roll*pid_roll + pid_pitch*pid_pitch);
+            if (h_accel_total > lean_angle_max * sqrt(2)) {
+            pid_roll = lean_angle_max * pid_roll/h_accel_total;
+            pid_pitch = lean_angle_max * pid_pitch/h_accel_total;
+            } 
 
-        pid_roll = pid_roll_tmp * cos(yaw_angle) + pid_pitch_tmp * sin(yaw_angle);
-        pid_pitch = - pid_roll_tmp * sin(yaw_angle) + pid_pitch_tmp * cos(yaw_angle);
+            // Coordinate Rotate
+            pid_roll_tmp = pid_roll;
+            pid_pitch_tmp = pid_pitch;
 
-         // // rotate accelerations into body forward-right frame
-        // h_accel_forward = accel_target_x * cos(yaw_angle) + accel_target_y * sin(yaw_angle);
-        // h_accel_right = -accel_target_x * sin(yaw_angle) + accel_target_y * cos(yaw_angle);
+            h_roll_target = pid_roll_tmp * cos(yaw_angle) + pid_pitch_tmp * sin(yaw_angle);     //centi-degree
+            h_pitch_target = - pid_roll_tmp * sin(yaw_angle) + pid_pitch_tmp * cos(yaw_angle);
 
-        // // update angle targets that will be passed to stabilize controller
-        // h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
-        // float cos_pitch_target = cosf(h_pitch_target*M_PI/18000);
-        // h_roll_target = atanf(h_accel_right * cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
+            h_roll_target = h_roll_target * M_PI/18000;     //rad
+            h_pitch_target = h_pitch_target * M_PI/18000;
 
-        // if (pid_roll > lean_angle_max)    //limit 15 degree
-        //     pid_roll = lean_angle_max;
-        // if (pid_roll < -lean_angle_max)
-        //     pid_roll = -lean_angle_max;
+            h_accel_forward = h_pitch_target *(18000/M_PI); //centi-deg
+            float cos_pitch_target = cosf(h_pitch_target);
+            //centi-deg
+            h_accel_right = atanf( (tanf(h_roll_target) * GRAVITY_MSS) * cos_pitch_target / GRAVITY_MSS) * (18000/M_PI);
 
-        // if (pid_pitch > lean_angle_max)
-        //     pid_pitch = lean_angle_max;
-        // if (pid_pitch < -lean_angle_max)
-        //     pid_pitch = -lean_angle_max;
-
-
-
+            pid_roll = h_accel_right;
+            pid_pitch = h_accel_forward;
+            // cliSerial->printf("pid1:%f %f\n",pid_roll,pid_pitch);
+        }
      ////////////////////////////////////PID-CONTROL-2////////////////////////////////////////////////
+        else{
+            //==========POS-TO-RATE=======================
+            error_x = (v3f_target_control.x - k_pos[0]*100);   //cm
+            error_y = (v3f_target_control.y - k_pos[1]*100);
 
+            // calc distance to target
+            d2_target = sqrt(error_x*error_x + error_y*error_y);     //cm
+            // pos_kp = 1;
+            // h_accel_cms = 500; 
+            // h_speed_cms = 500;
+            
+            // calculate the distance at which we swap between linear and sqrt velocity response
+            linear_d = h_accel_cms/(2.0f*pos_kp*pos_kp);
 
-        // //==========POS-TO-RATE=======================
-        // error_x = (v3f_target_control.x - k_pos[0]*100);   //cm
-        // error_y = (v3f_target_control.y - k_pos[1]*100);
+            if (d2_target > 2.0f*linear_d) {
+                // velocity response grows with the square root of the distance
+                float h_vel_sqrt = safe_sqrt(2.0f*h_accel_cms*(d2_target-linear_d));
+                vel_target_x = h_vel_sqrt * error_x/d2_target;
+                vel_target_y = h_vel_sqrt * error_y/d2_target;
+            }else{
+                // velocity response grows linearly with the distance
+                vel_target_x = pos_kp * error_x;
+                vel_target_y = pos_kp * error_y;
+            }
 
-        // // calc distance to target
-        // d2_target = sqrt(error_x*error_x + error_y*error_y);     //cm
-        // pos_kp = 1;
-        // h_accel_cms = 100; 
-        // h_speed_cms = 500;
-        // // calculate the distance at which we swap between linear and sqrt velocity response
-        // linear_d = h_accel_cms/(2.0f*pos_kp*pos_kp);
+             // scale velocity within speed limit
+            float h_vel_total = sqrt(vel_target_x*vel_target_x + vel_target_y*vel_target_y);
+            if (h_vel_total > h_speed_cms) {
+                vel_target_x = h_speed_cms * vel_target_x/h_vel_total;
+                vel_target_y = h_speed_cms * vel_target_y/h_vel_total;
+            }
 
-        // if (d2_target > 2.0f*linear_d) {
-        //     // velocity response grows with the square root of the distance
-        //     float h_vel_sqrt = safe_sqrt(2.0f*h_accel_cms*(d2_target-linear_d));
-        //     vel_target_x = h_vel_sqrt * error_x/d2_target;
-        //     vel_target_y = h_vel_sqrt * error_y/d2_target;
-        // }else{
-        //     // velocity response grows linearly with the distance
-        //     vel_target_x = pos_kp * error_x;
-        //     vel_target_y = pos_kp * error_y;
-        // }
+            //==========RATE-TO-ACCEL==================
+            // check if vehicle velocity is being overridden
+        
+            // feed forward desired acceleration calculation
+            h_dt = 0.0025;
+            accel_feedforward_x = (vel_target_x - h_vel_last_x)/h_dt;
+            accel_feedforward_y = (vel_target_y - h_vel_last_y)/h_dt;
 
-        //  // scale velocity within speed limit
-        // float h_vel_total = sqrt(vel_target_x*vel_target_x + vel_target_y*vel_target_y);
-        // if (h_vel_total > h_speed_cms) {
-        //     vel_target_x = h_speed_cms * vel_target_x/h_vel_total;
-        //     vel_target_y = h_speed_cms * vel_target_y/h_vel_total;
-        // }
+            // store this iteration's velocities for the next iteration
+            h_vel_last_x = vel_target_x;
+            h_vel_last_y = vel_target_y;
 
-        // //==========RATE-TO-ACCEL==================
-        // // check if vehicle velocity is being overridden
-    
-        // // feed forward desired acceleration calculation
-        // h_dt = 0.0025;
-        // accel_feedforward_x = (vel_target_x - h_vel_last_x)/h_dt;
-        // accel_feedforward_y = (vel_target_y - h_vel_last_y)/h_dt;
+            // calculate velocity error
+            h_vel_error_x = vel_target_x - k_vel[0]*100; //cm
+            h_vel_error_y = vel_target_y - k_vel[1]*100;
 
-        // // store this iteration's velocities for the next iteration
-        // h_vel_last_x = vel_target_x;
-        // h_vel_last_y = vel_target_y;
+            // call pi controller
+            // _pi_vel_xy.set_input(_vel_error);
 
-        // // calculate velocity error
-        // h_vel_error_x = vel_target_x - k_vel[0]*100; //cm
-        // h_vel_error_y = vel_target_y - k_vel[1]*100;
+            // --> filter vel input 5Hz
+            h_vel_error_x = h_vel_error_x_ + 0.01242 * (h_vel_error_x - h_vel_error_x_);
+            h_vel_error_x_ = h_vel_error_x;
 
-        // // call pi controller
-        // // _pi_vel_xy.set_input(_vel_error);
+            h_vel_error_y = h_vel_error_y_ + 0.01242 * (h_vel_error_y - h_vel_error_y_);
+            h_vel_error_y_ = h_vel_error_y;
 
-        // // --> filter vel input 5Hz
-        // h_vel_error_x = h_vel_error_x_ + 0.01242 * (h_vel_error_x - h_vel_error_x_);
-        // h_vel_error_x_ = h_vel_error_x;
+            // get p 
 
-        // h_vel_error_y = h_vel_error_y_ + 0.01242 * (h_vel_error_y - h_vel_error_y_);
-        // h_vel_error_y_ = h_vel_error_y;
+            // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
+            accel_target_x = accel_feedforward_x + h_vel_error_x * 1.0f;    //kp=1 , cmss
+            accel_target_y = accel_feedforward_y + h_vel_error_y * 1.0f;
 
-        // // get p 
+            //==========ACCEL-TO-LEAN==================
 
-        // // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-        // accel_target_x = accel_feedforward_x + h_vel_error_x * 1.0f;    //kp=1 , cmss
-        // accel_target_y = accel_feedforward_y + h_vel_error_y * 1.0f;
+            lean_ang_max = lean_angle_max;    //centi-degree
+            accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(30));  //cmss - 30deg limit
 
-        // //==========ACCEL-TO-LEAN==================
+            // scale desired acceleration if it's beyond acceptable limit
+            h_accel_total = sqrt(accel_target_x*accel_target_x + accel_target_y*accel_target_y);
+        
+            // constrain
+            if (h_accel_total > accel_max) {
+            accel_target_x = accel_max * accel_target_x/h_accel_total;
+            accel_target_y = accel_max * accel_target_y/h_accel_total;
+            } 
 
-        // lean_ang_max = 1000;    //centi-degree
-        // accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(30));  //cmss - 30deg limit
+            // lowpass filter on NE accel: 10hz
+            accel_target_x = accel_target_x_ + 0.02469 * (accel_target_x - accel_target_x_);
+            accel_target_x_ = accel_target_x;
 
-        // // scale desired acceleration if it's beyond acceptable limit
-        // h_accel_total = sqrt(accel_target_x*accel_target_x + accel_target_y*accel_target_y);
-    
-        // // constrain
-        // if (h_accel_total > accel_max) {
-        // accel_target_x = accel_max * accel_target_x/h_accel_total;
-        // accel_target_y = accel_max * accel_target_y/h_accel_total;
-        // } 
+            accel_target_y = accel_target_y_ + 0.02469 * (accel_target_y - accel_target_y_);
+            accel_target_y_ = accel_target_y;
 
-        // // lowpass filter on NE accel: 2hz
-        // accel_target_x = accel_target_x_ + 0.004988 * (accel_target_x - accel_target_x_);
-        // accel_target_x_ = accel_target_x;
+            // rotate accelerations into body forward-right frame
+            h_accel_right = accel_target_x * cos(yaw_angle) + accel_target_y * sin(yaw_angle);
+            h_accel_forward = -accel_target_x * sin(yaw_angle) + accel_target_y * cos(yaw_angle);
 
-        // accel_target_y = accel_target_y_ + 0.004988 * (accel_target_y - accel_target_y_);
-        // accel_target_y_ = accel_target_y;
+            // update angle targets that will be passed to stabilize controller
+            h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
+            float cos_pitch_target = cosf(h_pitch_target*M_PI/18000);
+            h_roll_target = atanf(h_accel_right * cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
 
-        // // rotate accelerations into body forward-right frame
-        // h_accel_forward = accel_target_x * cos(yaw_angle) + accel_target_y * sin(yaw_angle);
-        // h_accel_right = -accel_target_x * sin(yaw_angle) + accel_target_y * cos(yaw_angle);
+            // compatible
+            pid_pitch = h_pitch_target;   //0---1000
+            pid_roll = h_roll_target;
 
-        // // update angle targets that will be passed to stabilize controller
-        // h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
-        // float cos_pitch_target = cosf(h_pitch_target*M_PI/18000);
-        // h_roll_target = atanf(h_accel_right * cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
+            // cliSerial->printf("pid2:%f %f\n",pid_roll,pid_pitch);
+            // RC INPUT
+            // ^
+            // |
+            // | pitch < 0
 
-        // // compatible
-        // pid_pitch = -h_roll_target/3;   //0---1000
-        // pid_roll = -h_pitch_target/3;
+            // < --- roll <0
 
-        // // cliSerial->printf("rc:%f %f\n",target_pitch,target_roll);
-        // // RC INPUT
-        // // ^
-        // // |
-        // // | pitch < 0
-
-        // // < --- roll <0
-
-
+        }
         ////////////////////////////////////////////////////////////////////////////////////
         if(g.user_parm1 == 1){
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());

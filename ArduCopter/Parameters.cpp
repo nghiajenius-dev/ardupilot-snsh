@@ -910,8 +910,16 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(user_lpf, "USER_LPF", 0.0f),
   
     GSCALAR(user_raw_log, "USER_RAW_LOG", 0.0f),
+    GSCALAR(user_pid_lpf_value, "USER_PID_LPF", 0.01242f),
 
-    
+    GSCALAR(user_pid_mode, "USER_PID_MODE", 0.0f),
+    GSCALAR(user_pid2_kp,"USER_PID2_KP",1.0f),
+    GSCALAR(user_pid2_ki,"USER_PID2_KI",0.0f),
+    GSCALAR(user_pid2_kd,"USER_PID2_KD",0.0f),
+    GSCALAR(user_accel_max,"USER_ACC_MAX",800.0f),
+    GSCALAR(user_speed_max,"USER_SPEED_MAX",200.0f),
+
+
     AP_VAREND
 };
 

@@ -193,7 +193,7 @@ void Copter::userhook_FastLoop()
     
     // KALMAN
     if(kalman_type == 0){
-        LPF_pos(R_OP,nls_healthy,0,max_inno_m, nls_timeout_s,k_pos,k_vel);
+        LPF_pos(R_OP,nls_healthy,20,max_inno_m, nls_timeout_s,k_pos,k_vel);
     }
     else{
         multirate_kalman_v4(R_OP, nls_healthy, opt_flow, opt_gyro, -yaw_angle, k_pos, k_vel);
@@ -259,8 +259,8 @@ void Copter::userhook_FastLoop()
     }
 
     else if(g.user_trajectory == 1){                 // CIRCLE [cm]
-        circle_x  = 105 + circle_r * cos(circle_w * circle_step - PI_NUMBER);
-        circle_y  = 105 - circle_r * sin(circle_w * circle_step - PI_NUMBER);
+        circle_x  = 110 + circle_r * cos(circle_w * circle_step - PI_NUMBER);
+        circle_y  = 110 - circle_r * sin(circle_w * circle_step - PI_NUMBER);
         
         circle_step = circle_step + 0.01;  //increase @100Hz
         if(circle_step > circle_T){
@@ -298,6 +298,14 @@ void Copter::userhook_MediumLoop()
     //set pid
     pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
     pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
+
+    pid_posx.pid_lpf_value = g.user_pid_lpf_value;
+    pid_posy.pid_lpf_value = g.user_pid_lpf_value;
+    pid_mode = g.user_pid_mode;
+    
+    pos_kp = g.user_pid2_kp;
+    h_accel_cms = g.user_accel_max; 
+    h_speed_cms = g.user_speed_max;
 
     circle_r = g.user_circle_r;
     circle_T = g.user_circle_T;
