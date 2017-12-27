@@ -246,7 +246,14 @@ void Copter::userhook_FastLoop()
         max_inno_m[0] = 0.8;
         max_inno_m[1] = 0.8;
         max_inno_m[2] = 0.8;
-        
+
+        // Reset PID value
+        pid_posx.pid_reset();
+        pid_posy.pid_reset();
+
+        h_vel_xy_i_x = 0;
+        h_vel_xy_i_y = 0;
+
         // cliSerial->printf("TARGET_POS: %.2f, %.2f \n",v3f_target_control.x , v3f_target_control.y);
     } else if (!motors->armed() && is_armed ) is_armed = false;
     
@@ -304,7 +311,11 @@ void Copter::userhook_MediumLoop()
     pid_mode = g.user_pid_mode;
     
     pos_kp = g.user_pid2_kp;
-    h_accel_cms = g.user_accel_max; 
+    vel_kp = g.user_pid2_kp;
+    vel_ki = g.user_pid2_ki;
+
+
+    h_accel_cms = g.user_accel_max;
     h_speed_cms = g.user_speed_max;
 
     circle_r = g.user_circle_r;

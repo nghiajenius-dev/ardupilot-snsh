@@ -191,8 +191,8 @@ void Copter::headcutter_run()
             // calc distance to target
             d2_target = sqrt(error_x*error_x + error_y*error_y);     //cm
             // pos_kp = 1;
-            // h_accel_cms = 500; 
-            // h_speed_cms = 500;
+            // h_accel_cms = 100; 
+            // h_speed_cms = 500; --> update in parameter (default)
             
             // calculate the distance at which we swap between linear and sqrt velocity response
             linear_d = h_accel_cms/(2.0f*pos_kp*pos_kp);
@@ -231,21 +231,25 @@ void Copter::headcutter_run()
             h_vel_error_x = vel_target_x - k_vel[0]*100; //cm
             h_vel_error_y = vel_target_y - k_vel[1]*100;
 
-            // call pi controller
-            // _pi_vel_xy.set_input(_vel_error);
+            // call vel pi controller: kp, ki from parameter
+            
+            h_vel_xy_p_x = h_vel_error_x * vel_kp;  //cmss, kp=1
+            h_vel_xy_p_y = h_vel_error_y * vel_kp;  //cmss
 
-            // --> filter vel input 5Hz
-            h_vel_error_x = h_vel_error_x_ + 0.01242 * (h_vel_error_x - h_vel_error_x_);
-            h_vel_error_x_ = h_vel_error_x;
+            h_vel_xy_i_x += h_vel_error_x * vel_ki * h_dt; //ki=0.5
+            h_vel_xy_i_y += h_vel_error_y * vel_ki * h_dt;
 
-            h_vel_error_y = h_vel_error_y_ + 0.01242 * (h_vel_error_y - h_vel_error_y_);
-            h_vel_error_y_ = h_vel_error_y;
-
-            // get p 
+            h_vel_xy_imax = 500.0f; //cmss
+            if(abs(h_vel_xy_i_x) > h_vel_xy_imax){
+                h_vel_xy_i_x *= h_vel_xy_imax / abs(h_vel_xy_i_x);
+            }
+            if(abs(h_vel_xy_i_y) > h_vel_xy_imax){
+                h_vel_xy_i_y *= h_vel_xy_imax / abs(h_vel_xy_i_y);
+            }
 
             // combine feed forward accel with PID output from velocity error and scale PID output to compensate for optical flow measurement induced EKF noise
-            accel_target_x = accel_feedforward_x + h_vel_error_x * 1.0f;    //kp=1 , cmss
-            accel_target_y = accel_feedforward_y + h_vel_error_y * 1.0f;
+            accel_target_x = accel_feedforward_x + h_vel_xy_p_x + h_vel_xy_i_x;    
+            accel_target_y = accel_feedforward_y + h_vel_xy_p_y + h_vel_xy_i_y;
 
             //==========ACCEL-TO-LEAN==================
 
@@ -253,24 +257,43 @@ void Copter::headcutter_run()
             accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(30));  //cmss - 30deg limit
 
             // scale desired acceleration if it's beyond acceptable limit
-            h_accel_total = sqrt(accel_target_x*accel_target_x + accel_target_y*accel_target_y);
-        
-            // constrain
+            h_accel_total = sqrt(accel_target_x*accel_target_x + accel_target_y*accel_target_y);       
+            // constrain accel
             if (h_accel_total > accel_max) {
             accel_target_x = accel_max * accel_target_x/h_accel_total;
             accel_target_y = accel_max * accel_target_y/h_accel_total;
             } 
 
-            // lowpass filter on NE accel: 10hz
-            accel_target_x = accel_target_x_ + 0.02469 * (accel_target_x - accel_target_x_);
-            accel_target_x_ = accel_target_x;
+            // apply jerk limit of 17 m/s^3 - equates to a worst case of about 100 deg/sec/sec
+            float max_delta_accel = h_dt * 1700;
 
-            accel_target_y = accel_target_y_ + 0.02469 * (accel_target_y - accel_target_y_);
-            accel_target_y_ = accel_target_y;
+            Vector2f accel_in(accel_target_x, accel_target_y);
+            Vector2f accel_change = accel_in - h_accel_target_jerk_limited;
+            float accel_change_length = accel_change.length();
+
+            if(accel_change_length > max_delta_accel) {
+                accel_change *= max_delta_accel/accel_change_length;
+            }
+            h_accel_target_jerk_limited += accel_change;
+
+            // // lowpass filter on NE accel: 10hz
+            // accel_target_x = accel_target_x_ + 0.02469 * (accel_target_x - accel_target_x_);
+            // accel_target_x_ = accel_target_x;
+
+            // accel_target_y = accel_target_y_ + 0.02469 * (accel_target_y - accel_target_y_);
+            // accel_target_y_ = accel_target_y;
+            
+            //2hz @400hz --> 0.004988
+            h_accel_target_filtered = h_accel_target_jerk_limited;
+
+            h_accel_target_filtered.x = h_accel_target_filtered_.x + 0.004988 * (h_accel_target_filtered.x - h_accel_target_filtered_.x);
+            h_accel_target_filtered_.x = h_accel_target_jerk_limited.x;
+            h_accel_target_filtered.y = h_accel_target_filtered_.y + 0.004988 * (h_accel_target_filtered.y - h_accel_target_filtered_.y);
+            h_accel_target_filtered_.y = h_accel_target_jerk_limited.y;
 
             // rotate accelerations into body forward-right frame
-            h_accel_right = accel_target_x * cos(yaw_angle) + accel_target_y * sin(yaw_angle);
-            h_accel_forward = -accel_target_x * sin(yaw_angle) + accel_target_y * cos(yaw_angle);
+            h_accel_right = h_accel_target_filtered.x * cos(yaw_angle) + h_accel_target_filtered.y * sin(yaw_angle);
+            h_accel_forward = -h_accel_target_filtered.x * sin(yaw_angle) + h_accel_target_filtered.y * cos(yaw_angle);
 
             // update angle targets that will be passed to stabilize controller
             h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree

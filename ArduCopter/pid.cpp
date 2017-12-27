@@ -86,4 +86,5 @@ void PID::pid_reset()
     pid_param.u_ = 0;
     dPart = 0;
     dPart_ = 0;
+    intergral = 0;
 }

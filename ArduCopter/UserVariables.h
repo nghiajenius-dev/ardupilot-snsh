@@ -107,6 +107,10 @@ float d2_target, pos_kp, h_accel_cms, h_speed_cms, linear_d, d_target, vel_targe
 float h_dt, accel_feedforward_x, accel_feedforward_y, h_vel_last_x, h_vel_last_y, h_vel_error_x, h_vel_error_y, h_vel_error_x_, h_vel_error_y_, accel_target_x, accel_target_y;
 float lean_ang_max, accel_max, h_accel_total, accel_target_x_, accel_target_y_, h_accel_forward, h_accel_right, h_pitch_target, cos_pitch_target, h_roll_target;
 float pid_roll, pid_pitch, pid_mode;
+float h_vel_xy_p_x, h_vel_xy_p_y ,h_vel_xy_i_x, h_vel_xy_i_y, h_vel_xy_imax;
+Vector2f h_accel_target_jerk_limited;
+Vector2f h_accel_target_filtered,h_accel_target_filtered_;
+float vel_kp, vel_ki;
 
 
 size_t j_valen;
