@@ -70,8 +70,8 @@ float kalman_type;
 volatile uint16_t s16_range_finder;
 
 // TRAJECTORY
-float circle_r, circle_w, circle_step;
-float circle_T;
+float circle_r, circle_w, circle_step, circle_heading, pre_circle_x, pre_circle_y;
+float circle_T, circle_alpha;
 float circle_x, circle_y, circle_cnt;
 float lean_angle_max;
 

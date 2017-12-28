@@ -896,7 +896,7 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(user_pit_ki, "USER_PIT_KI", 0.0f),
     GSCALAR(user_pit_kd, "USER_PIT_KD", 0.7f),
 
-    GSCALAR(user_parm1, "USER_PARM1", 0.0f),
+    GSCALAR(user_pid_axis, "USER_PID_AXIS", 3.0f),
     GSCALAR(user_lean_max, "USER_LEAN_MAX", 0.0f),
     GSCALAR(user_trajectory, "USER_TRAJECTORY", 0.0f),
 

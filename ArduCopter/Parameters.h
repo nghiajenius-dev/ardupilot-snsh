@@ -377,7 +377,7 @@ public:
         k_param_user_pit_ki, 
         k_param_user_pit_kd,
 
-        k_param_user_parm1,
+        k_param_user_pid_axis,
         k_param_user_lean_max, 
         k_param_user_trajectory,
 
@@ -525,7 +525,7 @@ public:
     AP_Float                user_speed_max;
 
 
-    AP_Float                user_parm1;
+    AP_Float                user_pid_axis;
     AP_Float                user_lean_max;
     AP_Float                user_trajectory;
 

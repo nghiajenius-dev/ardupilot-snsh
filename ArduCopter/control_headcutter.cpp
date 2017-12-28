@@ -314,17 +314,21 @@ void Copter::headcutter_run()
 
         }
         ////////////////////////////////////////////////////////////////////////////////////
-        if(g.user_parm1 == 1){
+        if(g.user_pid_axis == 1){
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
         }
-        else if(g.user_parm1 == 2){
+        else if(g.user_pid_axis == 2){
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
 
         }
-        else{
+        else if(g.user_pid_axis == 3){
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
 
+        }
+        else{
+            // yaw in centi-degree
+            attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, ToDeg(frame_yaw_offset+circle_heading)*100, true, get_smoothing_gain());
         }
         //END OF HACK
 

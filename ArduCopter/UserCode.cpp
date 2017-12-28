@@ -168,7 +168,8 @@ void Copter::userhook_FastLoop()
 //==============================YAW-ANGLE======================================//
     // calc yaw angle
     yaw_angle = (double)ToRad(ahrs.yaw_sensor)/100 - frame_yaw_offset;  //rad
-//==============================KALMAN======================================//
+
+//=================================KALMAN======================================//
     // k_timer = AP_HAL::micros();
 
     if(nls_healthy){
@@ -266,26 +267,58 @@ void Copter::userhook_FastLoop()
     }
 
     else if(g.user_trajectory == 1){                 // CIRCLE [cm]
-        circle_x  = 110 + circle_r * cos(circle_w * circle_step - PI_NUMBER);
-        circle_y  = 110 - circle_r * sin(circle_w * circle_step - PI_NUMBER);
-        
-        circle_step = circle_step + 0.01;  //increase @100Hz
+        //increase step @100Hz
+        circle_step = circle_step + 0.01;  
         if(circle_step > circle_T){
             circle_step -= circle_T;
         }
-
-        // Update target pos
+        // store previous pos
+        pre_circle_x = circle_x;
+        pre_circle_y = circle_y;
+        // update new pos
+        circle_alpha = circle_w * circle_step;
+        circle_x  = 110 + circle_r * cos(circle_alpha);
+        circle_y  = 110 + circle_r * sin(circle_alpha);
+        // calc circle_heading
+        circle_heading = atan2(circle_x-pre_circle_x, circle_y-pre_circle_y);
+        // update target pos
         v3f_target_control.x = circle_x;
         v3f_target_control.y = circle_y;           
     }
 
-    else{                                        // HOVER [cm]
+    else if(g.user_trajectory == 2){                // INFINITY 8
+        //increase step @100Hz
+        circle_step = circle_step + 0.01;  
+        if(circle_step > circle_T){
+            circle_step -= circle_T;
+        }
+        // store previous pos
+        pre_circle_x = circle_x;
+        pre_circle_y = circle_y;
+        // update new pos
+        circle_alpha = circle_w * circle_step;
+        circle_x  = 110 + circle_r * sqrt(2) * cos(circle_alpha) / (sin(circle_alpha)*sin(circle_alpha)+1);
+        circle_y  = 110 + circle_r * sqrt(2) * cos(circle_alpha) * sin(circle_alpha) / (sin(circle_alpha)*sin(circle_alpha)+1);
+        // calc circle_heading
+        circle_heading = atan2(circle_x-pre_circle_x, circle_y-pre_circle_y);
+        // update target pos
+        v3f_target_control.x = circle_x;
+        v3f_target_control.y = circle_y; 
+    }                
+
+    else{                                           // HOVER [cm]
         circle_step = 0;
         // v3f_target_control.x = g.user_hover_x;
         // v3f_target_control.y = g.user_hover_y;
         // Update from GUI
     }
 
+//==============================GUI_PLANNER======================================//
+    // SEND POSITION TO GUI
+    if(g.user_raw_log == 0){    
+        // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
+        hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
+    }
 }
 #endif
 
@@ -334,12 +367,6 @@ void Copter::userhook_MediumLoop()
     ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
 
 //==============================GUI_PLANNER======================================//
-    // SEND POSITION TO GUI
-    if(g.user_raw_log == 0){    
-        hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
-        // hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
-   
-    }
     // GET TARGET FROM GUI
     gui_bytes = hal.uartD->available();
     // 
