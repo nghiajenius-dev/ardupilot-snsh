@@ -34,6 +34,7 @@ void Copter::userhook_init()
     max_inno_m[0] = 10;
     max_inno_m[1] = 10;
     max_inno_m[2] = 10;
+    update_loop = 0;
 }
 #endif
  
@@ -41,6 +42,7 @@ void Copter::userhook_init()
 #ifdef USERHOOK_FASTLOOP
 void Copter::userhook_FastLoop()
 {
+    update_loop = 1;
     // if( frame_yaw_offset == 0.0f){
     //      frame_yaw_offset = (double)ToRad(ahrs.yaw_sensor)/100;
     // }
@@ -220,10 +222,10 @@ void Copter::userhook_FastLoop()
         hal.uartD->printf("\r\n");
     }
 
-    s16_range_finder = (int)(k_pos[2]*100);    
+    s16_range_finder = (int)(R_OP[2]*100);              // use raw US_Z data    
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
     AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
-    AP_Notify::flags.ips_z = (int)(k_pos[2]*100);
+    AP_Notify::flags.ips_z = (int)(R_OP[2]*100);
     // k_timer = AP_HAL::micros()-k_timer;  
     //DATA Flash
     // Log_Write_NLS_KAL(R_OP[0],R_OP[1],R_OP[2],(float)nls_healthy);
@@ -261,6 +263,9 @@ void Copter::userhook_FastLoop()
     // ADD TRAJECTORY
     if(g.user_trajectory == 0){                      // HOVER [cm]
         circle_step = 0;
+        // zero feedforward velocity in loiter
+        target_vel_desire.x = 0.0f;
+        target_vel_desire.y = 0.0f;
         // v3f_target_control.x = g.user_hover_x;
         // v3f_target_control.y = g.user_hover_y;
         // Update from GUI
@@ -283,10 +288,13 @@ void Copter::userhook_FastLoop()
         circle_heading = atan2(circle_x-pre_circle_x, circle_y-pre_circle_y);
         // update target pos
         v3f_target_control.x = circle_x;
-        v3f_target_control.y = circle_y;           
+        v3f_target_control.y = circle_y;   
+        // calc feedforward velocity
+        target_vel_desire.x = (circle_x - pre_circle_x)/0.01;
+        target_vel_desire.y = (circle_y - pre_circle_y)/0.01;
     }
 
-    else if(g.user_trajectory == 2){                // INFINITY 8
+    else if(g.user_trajectory == 2){                // INFINITY 8 - type 2
         //increase step @100Hz
         circle_step = circle_step + 0.01;  
         if(circle_step > circle_T){
@@ -304,10 +312,39 @@ void Copter::userhook_FastLoop()
         // update target pos
         v3f_target_control.x = circle_x;
         v3f_target_control.y = circle_y; 
-    }                
+        // calc feedforward velocity
+        target_vel_desire.x = (circle_x - pre_circle_x)/0.01;
+        target_vel_desire.y = (circle_y - pre_circle_y)/0.01;
+    }
+
+    else if(g.user_trajectory == 3){                // INFINITY 8 - type 2
+        //increase step @100Hz
+        circle_step = circle_step + 0.01;  
+        if(circle_step > circle_T){
+            circle_step -= circle_T;
+        }
+        // store previous pos
+        pre_circle_x = circle_x;
+        pre_circle_y = circle_y;
+        // update new pos
+        circle_alpha = circle_w * circle_step/sqrt(2);
+        circle_x  = 110 + circle_r * cos(sqrt(2)*circle_alpha);
+        circle_y  = 110 + circle_r * sin(sqrt(2)*circle_alpha) * cos(sqrt(2)*circle_alpha);
+        // calc circle_heading
+        circle_heading = atan2(circle_x-pre_circle_x, circle_y-pre_circle_y);
+        // update target pos
+        v3f_target_control.x = circle_x;
+        v3f_target_control.y = circle_y; 
+        // calc feedforward velocity
+        target_vel_desire.x = (circle_x - pre_circle_x)/0.01;
+        target_vel_desire.y = (circle_y - pre_circle_y)/0.01;
+    }                 
 
     else{                                           // HOVER [cm]
         circle_step = 0;
+        // zero feedforward velocity in loiter
+        target_vel_desire.x = 0.0f;
+        target_vel_desire.y = 0.0f;
         // v3f_target_control.x = g.user_hover_x;
         // v3f_target_control.y = g.user_hover_y;
         // Update from GUI
@@ -344,8 +381,9 @@ void Copter::userhook_MediumLoop()
     pid_mode = g.user_pid_mode;
     
     pos_kp = g.user_pid2_kp;
-    vel_kp = g.user_pid2_kp;
+    vel_kp = g.user_pid2_kd;
     vel_ki = g.user_pid2_ki;
+    vel_kff = g.user_pid2_kff;
 
 
     h_accel_cms = g.user_accel_max;

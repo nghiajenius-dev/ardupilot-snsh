@@ -20,6 +20,8 @@ uint32_t ips_timer;
 uint16_t c_buff;
 uint16_t c_state;
 
+// CONTROL LOOP
+bool update_loop;
 
 // SENSORS
 float air_temperature;
@@ -79,8 +81,8 @@ float lean_angle_max;
 uint16_t gui_bytes;
 char gui_char[BUFFER_FRAME_SIZE];
 int gui_target;
-#define MIN_FENCE_CM 		40
-#define MAX_FENCE_CM 		180
+#define MIN_FENCE_CM 		20
+#define MAX_FENCE_CM 		200
 
 int gui_flag;
 uint16_t gui_buff;
@@ -94,9 +96,9 @@ bool is_armed = false;
 float error_deadband;
 
 PID::PID_PARAMETERS pid_pos_x_param = {.Kp = 0.05, .Ki = 0.0, .Kd = 0.005,
-		.Ts = 0.0025, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
+		.Ts = 0.01, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
 PID::PID_PARAMETERS pid_pos_y_param = {.Kp = 0.05, .Ki = 0.0, .Kd = 0.005,
-		.Ts = 0.0025, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
+		.Ts = 0.01, .PID_Saturation = 250, .e=0,  .e_=0, .e__=0, .u =0,  .u_=0};
 
 PID pid_posx;
 PID pid_posy;
@@ -108,10 +110,11 @@ float h_dt, accel_feedforward_x, accel_feedforward_y, h_vel_last_x, h_vel_last_y
 float lean_ang_max, accel_max, h_accel_total, accel_target_x_, accel_target_y_, h_accel_forward, h_accel_right, h_pitch_target, cos_pitch_target, h_roll_target;
 float pid_roll, pid_pitch, pid_mode;
 float h_vel_xy_p_x, h_vel_xy_p_y ,h_vel_xy_i_x, h_vel_xy_i_y, h_vel_xy_imax;
+float h_vel_xy_p_x_, h_vel_xy_p_y_;
 Vector2f h_accel_target_jerk_limited;
 Vector2f h_accel_target_filtered,h_accel_target_filtered_;
-float vel_kp, vel_ki;
-
+float vel_kp, vel_ki, vel_kff;
+Vector2f target_vel_desire;
 
 size_t j_valen;
 const char* j_value;

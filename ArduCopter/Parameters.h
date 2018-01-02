@@ -397,8 +397,10 @@ public:
         k_param_user_pid2_kp,
         k_param_user_pid2_ki,
         k_param_user_pid2_kd,
+        k_param_user_pid2_kff,
         k_param_user_accel_max,
         k_param_user_speed_max,
+        
     };
 
     AP_Int16        format_version;
@@ -521,9 +523,6 @@ public:
     AP_Float                user_pit_kp;
     AP_Float                user_pit_ki;
     AP_Float                user_pit_kd;
-    AP_Float                user_accel_max;
-    AP_Float                user_speed_max;
-
 
     AP_Float                user_pid_axis;
     AP_Float                user_lean_max;
@@ -545,6 +544,9 @@ public:
     AP_Float                user_pid2_kp;
     AP_Float                user_pid2_ki;
     AP_Float                user_pid2_kd;
+    AP_Float                user_pid2_kff;
+    AP_Float                user_accel_max;
+    AP_Float                user_speed_max;
 
     // Note: keep initializers here in the same order as they are declared
     // above.
