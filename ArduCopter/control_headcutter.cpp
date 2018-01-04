@@ -244,11 +244,11 @@ void Copter::headcutter_run()
                 h_vel_xy_p_y = vel_kp * h_vel_error_y;  //cmss
 
                 // 15Hz LPF 
-                h_vel_xy_p_x = h_vel_xy_p_x_ + g.user_pid_lpf_value * (h_vel_xy_p_x - h_vel_xy_p_x_);
-                h_vel_xy_p_x_ = h_vel_xy_p_x;
+                // h_vel_xy_p_x = h_vel_xy_p_x_ + g.user_pid_lpf_value * (h_vel_xy_p_x - h_vel_xy_p_x_);
+                // h_vel_xy_p_x_ = h_vel_xy_p_x;
 
-                h_vel_xy_p_y = h_vel_xy_p_y_ + g.user_pid_lpf_value * (h_vel_xy_p_y - h_vel_xy_p_y_);
-                h_vel_xy_p_y_ = h_vel_xy_p_y;
+                // h_vel_xy_p_y = h_vel_xy_p_y_ + g.user_pid_lpf_value * (h_vel_xy_p_y - h_vel_xy_p_y_);
+                // h_vel_xy_p_y_ = h_vel_xy_p_y;
 
                 // h_accel_target_filtered.x = h_accel_target_filtered_.x + 0.09516 * (h_accel_target_filtered.x - h_accel_target_filtered_.x);
                 // h_accel_target_filtered_.x = h_accel_target_filtered.x;
@@ -303,15 +303,14 @@ void Copter::headcutter_run()
                 // h_accel_target_filtered = h_accel_target_jerk_limited;
                 h_accel_target_filtered.x = accel_target_x;
                 h_accel_target_filtered.y = accel_target_y;
-
                 h_accel_target_filtered.x = h_accel_target_filtered_.x + 0.09516 * (h_accel_target_filtered.x - h_accel_target_filtered_.x);
                 h_accel_target_filtered_.x = h_accel_target_filtered.x;
                 h_accel_target_filtered.y = h_accel_target_filtered_.y + 0.09516 * (h_accel_target_filtered.y - h_accel_target_filtered_.y);
                 h_accel_target_filtered_.y = h_accel_target_filtered.y;
 
                 // rotate accelerations into body forward-right frame
-                h_accel_right = h_accel_target_filtered.x * cos(yaw_angle) + h_accel_target_filtered.y * sin(yaw_angle);
-                h_accel_forward = -h_accel_target_filtered.x * sin(yaw_angle) + h_accel_target_filtered.y * cos(yaw_angle);
+                h_accel_right = h_accel_target_filtered.x * cos(-yaw_angle) + h_accel_target_filtered.y * sin(-yaw_angle);
+                h_accel_forward = -h_accel_target_filtered.x * sin(-yaw_angle) + h_accel_target_filtered.y * cos(-yaw_angle);
 
                 // update angle targets that will be passed to stabilize controller
                 h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
@@ -322,7 +321,7 @@ void Copter::headcutter_run()
                 pid_pitch = h_pitch_target;   //0---1000
                 pid_roll = h_roll_target;
 
-                // cliSerial->printf("pid2:%f %f %f\r\n",pid_roll,pid_pitch,(float)AP_HAL::millis64());
+                // cliSerial->printf("pid2:%f %f %f\r\n",pid_roll,pid_pitch,(float)ToDeg(yaw_angle));
                 // RC INPUT
                 // ^
                 // |
