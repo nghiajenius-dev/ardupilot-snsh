@@ -342,7 +342,6 @@ void Copter::headcutter_run()
         }
         else if(g.user_pid_axis == 3){
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
-
         }
         else{
             // yaw in centi-degree

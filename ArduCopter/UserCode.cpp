@@ -25,16 +25,17 @@ void Copter::userhook_init()
     v3f_target_control.x = g.user_hover_x;
     v3f_target_control.y = g.user_hover_y;
 
-
-    circle_T = 24;// 24s/round
+    circle_T = 16;// 24s/round
     circle_w = 2*PI_NUMBER/circle_T;       
     circle_step = 0;
     circle_r = 40;
-    lean_angle_max = 1000;
+    lean_angle_max = 4500;
     max_inno_m[0] = 10;
     max_inno_m[1] = 10;
     max_inno_m[2] = 10;
     update_loop = 0;
+    kalman_type = 0;
+    pid_mode = 1;
 }
 #endif
  
@@ -222,10 +223,10 @@ void Copter::userhook_FastLoop()
         hal.uartD->printf("\r\n");
     }
 
-    s16_range_finder = (int)(R_OP[2]*100);              // use raw US_Z data    
+    s16_range_finder = (int)(k_pos[2]*100);
     AP_Notify::flags.ips_x = (int)(k_pos[0]*100);
     AP_Notify::flags.ips_y = (int)(k_pos[1]*100);
-    AP_Notify::flags.ips_z = (int)(R_OP[2]*100);
+    AP_Notify::flags.ips_z = (int)(k_pos[2]*100);
     // k_timer = AP_HAL::micros()-k_timer;  
     //DATA Flash
     // Log_Write_NLS_KAL(R_OP[0],R_OP[1],R_OP[2],(float)nls_healthy);
@@ -261,7 +262,7 @@ void Copter::userhook_FastLoop()
     } else if (!motors->armed() && is_armed ) is_armed = false;
     
     // ADD TRAJECTORY
-    if(g.user_trajectory == 0){                      // HOVER [cm]
+    if(trajectory_type == 0){                      // HOVER [cm]
         circle_step = 0;
         // zero feedforward velocity in loiter
         target_vel_desire.x = 0.0f;
@@ -271,7 +272,7 @@ void Copter::userhook_FastLoop()
         // Update from GUI
     }
 
-    else if(g.user_trajectory == 1){                 // CIRCLE [cm]
+    else if(trajectory_type == 1){                 // CIRCLE [cm]
         //increase step @100Hz
         circle_step = circle_step + 0.01;  
         if(circle_step > circle_T){
@@ -294,7 +295,7 @@ void Copter::userhook_FastLoop()
         target_vel_desire.y = (circle_y - pre_circle_y)/0.01;
     }
 
-    else if(g.user_trajectory == 2){                // INFINITY 8 - type 2
+    else if(trajectory_type == 2){                // INFINITY 8 - type 2
         //increase step @100Hz
         circle_step = circle_step + 0.01;  
         if(circle_step > circle_T){
@@ -317,7 +318,7 @@ void Copter::userhook_FastLoop()
         target_vel_desire.y = (circle_y - pre_circle_y)/0.01;
     }
 
-    else if(g.user_trajectory == 3){                // INFINITY 8 - type 2
+    else if(trajectory_type == 3){                // INFINITY 8 - type 2
         //increase step @100Hz
         circle_step = circle_step + 0.01;  
         if(circle_step > circle_T){
@@ -338,7 +339,30 @@ void Copter::userhook_FastLoop()
         // calc feedforward velocity
         target_vel_desire.x = (circle_x - pre_circle_x)/0.01;
         target_vel_desire.y = (circle_y - pre_circle_y)/0.01;
-    }                 
+    } 
+
+        else if(trajectory_type == 4){                // INFINITY 8 - type 3
+        //increase step @100Hz
+        circle_step = circle_step + 0.01;  
+        if(circle_step > circle_T){
+            circle_step -= circle_T;
+        }
+        // store previous pos
+        pre_circle_x = circle_x;
+        pre_circle_y = circle_y;
+        // update new pos
+        circle_alpha = circle_w * circle_step;
+        circle_x  = 110 + circle_r * cos(circle_alpha);
+        circle_y  = 110 + circle_r * sin(circle_alpha*2)/2;
+        // calc circle_heading
+        circle_heading = atan2(circle_x-pre_circle_x, circle_y-pre_circle_y);
+        // update target pos
+        v3f_target_control.x = circle_x;
+        v3f_target_control.y = circle_y; 
+        // calc feedforward velocity
+        target_vel_desire.x = (circle_x - pre_circle_x)/0.01;
+        target_vel_desire.y = (circle_y - pre_circle_y)/0.01;
+    }                
 
     else{                                           // HOVER [cm]
         circle_step = 0;
@@ -348,13 +372,6 @@ void Copter::userhook_FastLoop()
         // v3f_target_control.x = g.user_hover_x;
         // v3f_target_control.y = g.user_hover_y;
         // Update from GUI
-    }
-
-//==============================GUI_PLANNER======================================//
-    // SEND POSITION TO GUI
-    if(g.user_raw_log == 0){    
-        // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
-        hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
     }
 }
 #endif
@@ -373,28 +390,27 @@ void Copter::userhook_MediumLoop()
     // cliSerial->printf("p:%f %f %f\r\n",pid_pitch, pid_roll, d_target);
 
     //set pid
-    pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
-    pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
+    // pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
+    // pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
 
-    pid_posx.pid_lpf_value = g.user_pid_lpf_value;
-    pid_posy.pid_lpf_value = g.user_pid_lpf_value;
-    pid_mode = g.user_pid_mode;
+    // pid_posx.pid_lpf_value = g.user_pid_lpf_value;
+    // pid_posy.pid_lpf_value = g.user_pid_lpf_value;
+    // pid_mode = g.user_pid_mode;
     
     pos_kp = g.user_pid2_kp;
     vel_kp = g.user_pid2_kd;
     vel_ki = g.user_pid2_ki;
     vel_kff = g.user_pid2_kff;
 
+    // h_accel_cms = g.user_accel_max;
+    // h_speed_cms = g.user_speed_max;
 
-    h_accel_cms = g.user_accel_max;
-    h_speed_cms = g.user_speed_max;
+    // circle_r = g.user_circle_r;
+    // circle_T = g.user_circle_T;
+    // circle_w = 2*PI_NUMBER/circle_T; 
 
-    circle_r = g.user_circle_r;
-    circle_T = g.user_circle_T;
-    circle_w = 2*PI_NUMBER/circle_T; 
-
-    lean_angle_max = g.user_lean_max;
-    kalman_type = g.user_kalman_type;
+    // lean_angle_max = g.user_lean_max;
+    // kalman_type = g.user_kalman_type;
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
     // air_temperature = barometer.get_temperature();
@@ -407,10 +423,6 @@ void Copter::userhook_MediumLoop()
 //==============================GUI_PLANNER======================================//
     // GET TARGET FROM GUI
     gui_bytes = hal.uartD->available();
-    // 
-    // value = js0n("x", 0, gui_str , strlen(gui_str), &valen);
-    // atoi(value);
-
     while (gui_bytes-- > 0) {
         // Get data string here
         gui_char[0] = hal.uartD->read();
@@ -430,11 +442,10 @@ void Copter::userhook_MediumLoop()
             if(j_value != NULL){
                 // hal.uartD->printf("x:%d",(int)atoi(j_value));
                 gui_target = (int)atoi(j_value);
-                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM)){                    
+                if((gui_target >= MIN_FENCE_CM) && (gui_target <= MAX_FENCE_CM) && (trajectory_type == 0)){                    
                     // ONLY ACCEPT TARGET ON GUIDE MODE
-                    if(g.user_trajectory == 0){     
-                        v3f_target_control.x = gui_target;
-                    }
+                    v3f_target_control.x = gui_target;
+                    
                 }
             }
 
@@ -442,13 +453,58 @@ void Copter::userhook_MediumLoop()
             if(j_value != NULL){
                 // hal.uartD->printf("y:%d",(int)atoi(j_value));
                 gui_target = (int)atoi(j_value);
-                if((gui_target > MIN_FENCE_CM) && (gui_target < MAX_FENCE_CM)){
+                if((gui_target >= MIN_FENCE_CM) && (gui_target <= MAX_FENCE_CM) && (trajectory_type == 0)){
                     // ONLY ACCEPT TARGET ON GUIDE MODE
-                    if(g.user_trajectory == 0){     
-                        v3f_target_control.y = gui_target;
-                    }
+                    v3f_target_control.y = gui_target;
                 }
             }
+
+            j_value = js0n("tj", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
+            if(j_value != NULL){
+                // hal.uartD->printf("y:%d",(int)atoi(j_value));
+                gui_target = (int)atoi(j_value);
+                // TJ: 0 -> 3
+                if((gui_target >= 0) && (gui_target <= 3)){
+                    trajectory_type = gui_target;
+                    // zero feedforward velocity in loiter
+                    target_vel_desire.x = 0.0f;
+                    target_vel_desire.y = 0.0f;
+                }
+            }
+
+            j_value = js0n("r", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
+            if(j_value != NULL){
+                // hal.uartD->printf("y:%d",(int)atoi(j_value));
+                gui_target = (int)atoi(j_value);
+                // R: 10 -> 50 cm
+                if((gui_target >= 10) && (gui_target <= 50)){
+                    circle_r = gui_target;
+                }
+            }
+
+            j_value = js0n("t", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
+            if(j_value != NULL){
+                // hal.uartD->printf("y:%d",(int)atoi(j_value));
+                gui_target = (int)atoi(j_value);
+                // T: 4 -> 20 s
+                if((gui_target >= 4) && (gui_target <= 20)){
+                    circle_T = gui_target;
+                    circle_w = 2*PI_NUMBER/circle_T;
+                }
+            }
+
+            j_value = js0n("op", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
+            if(j_value != NULL){
+                // hal.uartD->printf("y:%d",(int)atoi(j_value));
+                gui_target = (int)atoi(j_value);
+                // kalman_type
+                // 0: us 
+                // 1: us+opt
+                if((gui_target >= 0) && (gui_target <= 1)){
+                    kalman_type = gui_target;     
+                }
+            }
+
             gui_buff = 0;
             gui_state = 0;
         }
@@ -458,7 +514,14 @@ void Copter::userhook_MediumLoop()
                 gui_buff++;
             }
         }
-    }    
+    }
+
+    //==============================GUI_PLANNER======================================//
+    // SEND POSITION TO GUI
+    if(g.user_raw_log == 0){    
+        // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
+        hal.uartD->printf("{\"x\":%d,\"y\":%d,\"z\":%d,\"tx\":%d,\"ty\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)(k_pos[2]*100),(int)v3f_target_control.x,(int)v3f_target_control.y);
+    }   
 
 }
 #endif

@@ -76,13 +76,14 @@ float circle_r, circle_w, circle_step, circle_heading, pre_circle_x, pre_circle_
 float circle_T, circle_alpha;
 float circle_x, circle_y, circle_cnt;
 float lean_angle_max;
+float trajectory_type;
 
 // GUI/PLANNER
 uint16_t gui_bytes;
 char gui_char[BUFFER_FRAME_SIZE];
 int gui_target;
-#define MIN_FENCE_CM 		20
-#define MAX_FENCE_CM 		200
+#define MIN_FENCE_CM 		40
+#define MAX_FENCE_CM 		180
 
 int gui_flag;
 uint16_t gui_buff;
