@@ -4,10 +4,13 @@
 // example variables used in Wii camera testing - replace with your own
 // variables
 #ifdef USERHOOK_VARIABLES
-#define BUFFER_FRAME_SIZE   500
+#define BUFFER_FRAME_SIZE   250
 #define MAX_REV_NODE		5
 #define PI_NUMBER 			3.14159f
-
+#define CENTER_X			110		//cm
+#define CENTER_Y			110		//cm
+#define MIN_FENCE_CM 		40
+#define MAX_FENCE_CM 		180
 // IPS
 #define RUN_TRILATERATION
 uint16_t ips_bytes;
@@ -22,7 +25,7 @@ uint16_t c_state;
 
 // CONTROL LOOP
 bool update_loop;
-
+bool update_slowloop;
 // SENSORS
 float air_temperature;
 Vector3f ips_gyro, ips_accel;
@@ -75,6 +78,7 @@ volatile uint16_t s16_range_finder;
 float circle_r, circle_w, circle_step, circle_heading, pre_circle_x, pre_circle_y;
 float circle_T, circle_alpha;
 float circle_x, circle_y, circle_cnt;
+Vector2f circle_v, circle_a;
 float lean_angle_max;
 float trajectory_type;
 
@@ -82,9 +86,6 @@ float trajectory_type;
 uint16_t gui_bytes;
 char gui_char[BUFFER_FRAME_SIZE];
 int gui_target;
-#define MIN_FENCE_CM 		40
-#define MAX_FENCE_CM 		180
-
 int gui_flag;
 uint16_t gui_buff;
 uint16_t gui_state;
@@ -114,8 +115,12 @@ float h_vel_xy_p_x, h_vel_xy_p_y ,h_vel_xy_i_x, h_vel_xy_i_y, h_vel_xy_imax;
 float h_vel_xy_p_x_, h_vel_xy_p_y_;
 Vector2f h_accel_target_jerk_limited;
 Vector2f h_accel_target_filtered,h_accel_target_filtered_;
-float vel_kp, vel_ki, vel_kff;
+float vel_kp, vel_ki, kff;
 Vector2f target_vel_desire;
+Vector2f target_acc_desire;
+int en_feedforward;
+
+float heading_mode, heading_ctrl, heading_ctrl_mp;
 
 size_t j_valen;
 const char* j_value;

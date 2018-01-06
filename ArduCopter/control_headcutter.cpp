@@ -192,11 +192,11 @@ void Copter::headcutter_run()
                 error_x = (v3f_target_control.x - k_pos[0]*100);   //cm
                 error_y = (v3f_target_control.y - k_pos[1]*100);
 
-                // // calc distance to target
-                // d2_target = sqrt(error_x*error_x + error_y*error_y);     //cm
+                // calc distance to target
+                d2_target = sqrt(error_x*error_x + error_y*error_y);     //cm
                 // // pos_kp = 1;
-                // // h_accel_cms = 100; 
-                // // h_speed_cms = 500; --> update in parameter (default)
+                // // h_accel_cms = 500; 
+                // // h_speed_cms = 100; --> update in parameter (default)
                 
                 // // calculate the distance at which we swap between linear and sqrt velocity response
                 // linear_d = h_accel_cms/(2.0f*pos_kp*pos_kp);
@@ -213,8 +213,10 @@ void Copter::headcutter_run()
                 // }
 
                     // add velocity feedforward
-                    vel_target_x += vel_kff * target_vel_desire.x;
-                    vel_target_y += vel_kff * target_vel_desire.y;
+                    // if(en_feedforward == 1){
+                        vel_target_x += kff * target_vel_desire.x;
+                        vel_target_y += kff * target_vel_desire.y;
+                    // }
 
                 //  // scale velocity within speed limit
                 // float h_vel_total = sqrt(vel_target_x*vel_target_x + vel_target_y*vel_target_y);
@@ -222,14 +224,26 @@ void Copter::headcutter_run()
                 //     vel_target_x = h_speed_cms * vel_target_x/h_vel_total;
                 //     vel_target_y = h_speed_cms * vel_target_y/h_vel_total;
                 // }
-
-
-
                 //==========RATE-TO-ACCEL==================
-                // feed forward desired acceleration calculation       
-                accel_feedforward_x = (vel_target_x - h_vel_last_x)/h_dt;
-                accel_feedforward_y = (vel_target_y - h_vel_last_y)/h_dt;
-
+                // feed forward desired acceleration calculation
+                // if(en_feedforward == 1){       
+                    // if(trajectory_type != 0){   // TRAJECTORY
+                        // accel_feedforward_x = kff * target_acc_desire.x;
+                        // accel_feedforward_y = kff * target_acc_desire.y;
+                    // }
+                    // else{                       // HOVER
+                        accel_feedforward_x = (vel_target_x - h_vel_last_x)/h_dt;
+                        accel_feedforward_y = (vel_target_y - h_vel_last_y)/h_dt;
+                        if((en_feedforward == 1)&&(trajectory_type != 0)){
+                            accel_feedforward_x += kff * target_acc_desire.x;
+                            accel_feedforward_y += kff * target_acc_desire.y;
+                        }
+                    // }
+                // }
+                // else{
+                //     accel_feedforward_x = 0;
+                //     accel_feedforward_y = 0;
+                // }
                 // store this iteration's velocities for the next iteration
                 h_vel_last_x = vel_target_x;
                 h_vel_last_y = vel_target_y;
@@ -307,46 +321,50 @@ void Copter::headcutter_run()
                 h_accel_target_filtered_.x = h_accel_target_filtered.x;
                 h_accel_target_filtered.y = h_accel_target_filtered_.y + 0.09516 * (h_accel_target_filtered.y - h_accel_target_filtered_.y);
                 h_accel_target_filtered_.y = h_accel_target_filtered.y;
-
                 // rotate accelerations into body forward-right frame
                 h_accel_right = h_accel_target_filtered.x * cos(-yaw_angle) + h_accel_target_filtered.y * sin(-yaw_angle);
                 h_accel_forward = -h_accel_target_filtered.x * sin(-yaw_angle) + h_accel_target_filtered.y * cos(-yaw_angle);
-
                 // update angle targets that will be passed to stabilize controller
                 h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
                 float cos_pitch_target = cosf(h_pitch_target*M_PI/18000);
                 h_roll_target = atanf(h_accel_right * cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
-
                 // compatible
                 pid_pitch = h_pitch_target;   //0---1000
                 pid_roll = h_roll_target;
-
                 // cliSerial->printf("pid2:%f %f %f\r\n",pid_roll,pid_pitch,(float)ToDeg(yaw_angle));
                 // RC INPUT
                 // ^
                 // |
                 // | pitch < 0
-
                 // < --- roll <0
-
             }
         }
-        ////////////////////////////////////////////////////////////////////////////////////
-        if(g.user_pid_axis == 1){
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
 
-        }
-        else if(g.user_pid_axis == 2){
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
-
-        }
-        else if(g.user_pid_axis == 3){
+        if(heading_mode == 0){                      // HOLD: all mode
+            // heading_ctrl = frame_yaw_offset * 100;
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
         }
-        else{
-            // yaw in centi-degree
-            attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, ToDeg(frame_yaw_offset+circle_heading)*100, true, get_smoothing_gain());
+        else if(heading_mode == 1){                 // ALONG: exclude HOVER mode
+            // heading_ctrl = ToDeg(circle_heading + frame_yaw_offset)*100;  
+            attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, heading_ctrl, true, get_smoothing_gain());
         }
+        else{                                       // CENTRIPETAL: only in CIRCLE
+            // heading_ctrl = ToDeg(circle_heading + frame_yaw_offset + M_PI/2)*100;
+            attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, heading_ctrl, true, get_smoothing_gain());
+        }
+        ////////////////////////////////////////////////////////////////////////////////////
+        // if(g.user_pid_axis == 1){
+        //     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
+
+        // }
+        // else if(g.user_pid_axis == 2){
+        //     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+
+        // }
+        // else{   // final
+        //     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+        // }
+        
         //END OF HACK
 
         // call attitude controller
