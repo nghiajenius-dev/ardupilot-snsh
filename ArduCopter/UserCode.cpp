@@ -35,7 +35,7 @@ void Copter::userhook_init()
     max_inno_m[2] = 10;
     update_loop = 0;
     kalman_type = 0;
-    pid_mode = 1;
+    pid_mode = 0;
     en_feedforward = 0;
     heading_mode = 0;
 }
@@ -148,9 +148,7 @@ void Copter::userhook_FastLoop()
     // cliSerial->printf("%.1f,%.1f\r\n",(double)ToDeg(frame_yaw_offset),(double)ToDeg(yaw_angle));
     // hal.uartF->printf("INS:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",ips_gyro.x,ips_gyro.y,ips_gyro.z,ips_accel.x,ips_accel.y,ips_accel.z);
 
-//==============================YAW-ANGLE======================================//
-    // calc yaw angle
-    yaw_angle = (double)ToRad(ahrs.yaw_sensor)/100 - frame_yaw_offset;  //rad
+
 
 //=================================KALMAN======================================//
     // NLS_TIMER
@@ -384,12 +382,12 @@ void Copter::userhook_MediumLoop()
     // debug PID 2
     // cliSerial->printf("p:%f %f %f\r\n",pid_pitch, pid_roll, d_target);
 
-    //set pid
-    // pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
-    // pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
+    // set pid
+    pid_posx.pid_set_k_params(g.user_rll_kp,g.user_rll_ki,g.user_rll_kd);
+    pid_posy.pid_set_k_params(g.user_pit_kp,g.user_pit_ki,g.user_pit_kd);
 
-    // pid_posx.pid_lpf_value = g.user_pid_lpf_value;
-    // pid_posy.pid_lpf_value = g.user_pid_lpf_value;
+    pid_posx.pid_lpf_value = g.user_pid_lpf_value;
+    pid_posy.pid_lpf_value = g.user_pid_lpf_value;
     // pid_mode = g.user_pid_mode;
 
     // h_accel_cms = g.user_accel_max;
@@ -399,7 +397,7 @@ void Copter::userhook_MediumLoop()
     // circle_T = g.user_circle_T;
     // circle_w = 2*PI_NUMBER/circle_T; 
 
-    // lean_angle_max = g.user_lean_max;
+    lean_angle_max = g.user_lean_max;
     // kalman_type = g.user_kalman_type;
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
@@ -466,8 +464,8 @@ void Copter::userhook_MediumLoop()
             if(j_value != NULL){
                 // hal.uartD->printf("y:%d",(int)atoi(j_value));
                 gui_target = (int)atoi(j_value);
-                // R: 10 -> 50 cm
-                if((gui_target >= 10) && (gui_target <= 50)){
+                // R: 10 -> 80 cm
+                if((gui_target >= 10) && (gui_target <= 80)){
                     circle_r = gui_target;
                 }
             }
@@ -500,7 +498,8 @@ void Copter::userhook_MediumLoop()
                 // 0: pid 
                 // 1: pid+ff
                 if((gui_target >= 0) && (gui_target <= 1)){
-                    en_feedforward = gui_target;     
+                    // en_feedforward = gui_target; 
+                    pid_mode = gui_target;     
                 }
             }
             j_value = js0n("hd", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);

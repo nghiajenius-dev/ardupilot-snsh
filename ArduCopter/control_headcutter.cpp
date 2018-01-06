@@ -146,43 +146,45 @@ void Copter::headcutter_run()
 /////////////////////////////////////// 100Hz PID update ///////////////////////////////////////
         if(update_loop == 1){   
             update_loop = 0;
-            //THIS IS A BIG HACK
-        
+            //THIS IS A BIG HACK        
         ////////////////////////////////////PID CONTROL 1////////////////////////////////////////////////
             if(pid_mode == 0){
                 error_x = v3f_target_control.x - k_pos[0]*100;   //cm
                 error_y = v3f_target_control.y - k_pos[1]*100;
 
-                pid_roll = pid_posx.pid_process(error_x);           //Uc: control angle [degree]
-                pid_pitch = pid_posy.pid_process(-error_y);
+                // calc distance to target
+                d2_target = sqrt(error_x*error_x + error_y*error_y);     //cm
 
-                pid_roll *= 100; // centi degree
-                pid_pitch *= 100;
+                pid_roll_ = pid_posx.pid_process(error_x);           //Uc: control angle [degree]
+                pid_pitch_ = pid_posy.pid_process(error_y);
 
+                pid_roll_ *= 100; // centi degree
+                pid_pitch_ *= 100;//re
+
+                // // feedforward
+                // if((en_feedforward == 1)&&(trajectory_type != 0)){
+                //     accel_feedforward_x = kff * atanf(target_acc_desire.x/(GRAVITY_MSS * 100))*(18000/M_PI); //centi-degree
+                //     accel_feedforward_y = kff * atanf(target_acc_desire.y/(GRAVITY_MSS * 100))*(18000/M_PI);
+                //     pid_roll_ += accel_feedforward_x;
+                //     pid_pitch_ += accel_feedforward_y;
+                // }
+                
                 // lean_angle_max limit [centi-deg]
-                h_accel_total = sqrt(pid_roll*pid_roll + pid_pitch*pid_pitch);
+                h_accel_total = sqrt(pid_roll_*pid_roll_ + pid_pitch_*pid_pitch_);
                 if (h_accel_total > lean_angle_max * sqrt(2)) {
-                pid_roll = lean_angle_max * pid_roll/h_accel_total;
-                pid_pitch = lean_angle_max * pid_pitch/h_accel_total;
+                pid_roll_ = lean_angle_max * pid_roll_/h_accel_total;
+                pid_pitch_ = lean_angle_max * pid_pitch_/h_accel_total;
                 } 
 
-                // Coordinate Rotate
-                pid_roll_tmp = pid_roll;
-                pid_pitch_tmp = pid_pitch;
+                // // Coordinate Rotate
+                // pid_roll_tmp = pid_roll;
+                // pid_pitch_tmp = pid_pitch;
 
-                h_roll_target = pid_roll_tmp * cos(yaw_angle) + pid_pitch_tmp * sin(yaw_angle);     //centi-degree
-                h_pitch_target = - pid_roll_tmp * sin(yaw_angle) + pid_pitch_tmp * cos(yaw_angle);
+                // h_roll_target = pid_roll_tmp * cos(yaw_angle) + pid_pitch_tmp * sin(yaw_angle);     //centi-degree
+                // h_pitch_target = - pid_roll_tmp * sin(yaw_angle) + pid_pitch_tmp * cos(yaw_angle);
 
-                // h_roll_target = h_roll_target * M_PI/18000;     //rad
-                // h_pitch_target = h_pitch_target * M_PI/18000;
-
-                // h_accel_forward = h_pitch_target *(18000/M_PI); //centi-deg
-                // float cos_pitch_target = cosf(h_pitch_target);
-                // //centi-deg
-                // h_accel_right = atanf( (tanf(h_roll_target) * GRAVITY_MSS) * cos_pitch_target / GRAVITY_MSS) * (18000/M_PI);
-
-                pid_roll = h_roll_target;
-                pid_pitch = h_pitch_target;
+                // pid_roll = h_roll_target;
+                // pid_pitch = h_pitch_target;
                 // cliSerial->printf("pid1:%f %f %f\r\n",pid_roll,pid_pitch,(float)AP_HAL::millis64());
             }
          ////////////////////////////////////PID-CONTROL-2////////////////////////////////////////////////
@@ -194,9 +196,6 @@ void Copter::headcutter_run()
 
                 // calc distance to target
                 d2_target = sqrt(error_x*error_x + error_y*error_y);     //cm
-                // // pos_kp = 1;
-                // // h_accel_cms = 500; 
-                // // h_speed_cms = 100; --> update in parameter (default)
                 
                 // // calculate the distance at which we swap between linear and sqrt velocity response
                 // linear_d = h_accel_cms/(2.0f*pos_kp*pos_kp);
@@ -214,8 +213,8 @@ void Copter::headcutter_run()
 
                     // add velocity feedforward
                     // if(en_feedforward == 1){
-                        vel_target_x += kff * target_vel_desire.x;
-                        vel_target_y += kff * target_vel_desire.y;
+                        vel_target_x += 0.7 * target_vel_desire.x;
+                        vel_target_y += 0.7 * target_vel_desire.y;
                     // }
 
                 //  // scale velocity within speed limit
@@ -234,10 +233,7 @@ void Copter::headcutter_run()
                     // else{                       // HOVER
                         accel_feedforward_x = (vel_target_x - h_vel_last_x)/h_dt;
                         accel_feedforward_y = (vel_target_y - h_vel_last_y)/h_dt;
-                        if((en_feedforward == 1)&&(trajectory_type != 0)){
-                            accel_feedforward_x += kff * target_acc_desire.x;
-                            accel_feedforward_y += kff * target_acc_desire.y;
-                        }
+
                     // }
                 // }
                 // else{
@@ -321,16 +317,17 @@ void Copter::headcutter_run()
                 h_accel_target_filtered_.x = h_accel_target_filtered.x;
                 h_accel_target_filtered.y = h_accel_target_filtered_.y + 0.09516 * (h_accel_target_filtered.y - h_accel_target_filtered_.y);
                 h_accel_target_filtered_.y = h_accel_target_filtered.y;
-                // rotate accelerations into body forward-right frame
-                h_accel_right = h_accel_target_filtered.x * cos(-yaw_angle) + h_accel_target_filtered.y * sin(-yaw_angle);
-                h_accel_forward = -h_accel_target_filtered.x * sin(-yaw_angle) + h_accel_target_filtered.y * cos(-yaw_angle);
-                // update angle targets that will be passed to stabilize controller
-                h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
-                float cos_pitch_target = cosf(h_pitch_target*M_PI/18000);
-                h_roll_target = atanf(h_accel_right * cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
-                // compatible
-                pid_pitch = h_pitch_target;   //0---1000
-                pid_roll = h_roll_target;
+                
+                // // rotate accelerations into body forward-right frame
+                // h_accel_right = h_accel_target_filtered.x * cos(-yaw_angle) + h_accel_target_filtered.y * sin(-yaw_angle);
+                // h_accel_forward = -h_accel_target_filtered.x * sin(-yaw_angle) + h_accel_target_filtered.y * cos(-yaw_angle);
+                // // update angle targets that will be passed to stabilize controller
+                // h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
+                // float cos_pitch_target = cosf(h_pitch_target*M_PI/18000);
+                // h_roll_target = atanf(h_accel_right * cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
+                // // compatible
+                // pid_pitch = h_pitch_target;   //0---1000
+                // pid_roll = h_roll_target;
                 // cliSerial->printf("pid2:%f %f %f\r\n",pid_roll,pid_pitch,(float)ToDeg(yaw_angle));
                 // RC INPUT
                 // ^
@@ -338,6 +335,35 @@ void Copter::headcutter_run()
                 // | pitch < 0
                 // < --- roll <0
             }
+        }
+//=====================================400Hz apply yaw =================================//
+        //==============================YAW-ANGLE======================================//
+        // calc yaw angle
+        yaw_angle = (double)ToRad(ahrs.yaw_sensor)/100 - frame_yaw_offset;  //rad
+
+        if(pid_mode ==0){
+            // Coordinate Rotate
+            pid_roll_tmp = pid_roll_;
+            pid_pitch_tmp = pid_pitch_;
+
+            h_roll_target = pid_roll_tmp * cos(-yaw_angle) + pid_pitch_tmp * sin(-yaw_angle);     //centi-degree
+            h_pitch_target = - pid_roll_tmp * sin(-yaw_angle) + pid_pitch_tmp * cos(-yaw_angle);
+
+            pid_roll = h_roll_target;
+            pid_pitch = -h_pitch_target; //reverse control
+            // cliSerial-> printf("1:%f %f %f\r\n", pid_roll,pid_pitch,ToDeg(yaw_angle));
+        }
+        else{
+            // rotate accelerations into body forward-right frame
+            h_accel_right = h_accel_target_filtered.x * cos(-yaw_angle) + h_accel_target_filtered.y * sin(-yaw_angle);
+            h_accel_forward = -h_accel_target_filtered.x * sin(-yaw_angle) + h_accel_target_filtered.y * cos(-yaw_angle);
+            // update angle targets that will be passed to stabilize controller
+            h_pitch_target = atanf(-h_accel_forward/(GRAVITY_MSS * 100))*(18000/M_PI);  //centi-degree
+            float cos_pitch_target = cosf(h_pitch_target*M_PI/18000);
+            h_roll_target = atanf(h_accel_right * cos_pitch_target/(GRAVITY_MSS * 100))*(18000/M_PI);
+            // compatible
+            pid_pitch = h_pitch_target;   //0---1000
+            pid_roll = h_roll_target;
         }
 
         if(heading_mode == 0){                      // HOLD: all mode
@@ -352,19 +378,7 @@ void Copter::headcutter_run()
             // heading_ctrl = ToDeg(circle_heading + frame_yaw_offset + M_PI/2)*100;
             attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, heading_ctrl, true, get_smoothing_gain());
         }
-        ////////////////////////////////////////////////////////////////////////////////////
-        // if(g.user_pid_axis == 1){
-        //     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, target_pitch, target_yaw_rate, get_smoothing_gain());
-
-        // }
-        // else if(g.user_pid_axis == 2){
-        //     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
-
-        // }
-        // else{   // final
-        //     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
-        // }
-        
+        ////////////////////////////////////////////////////////////////////////////////////        
         //END OF HACK
 
         // call attitude controller
