@@ -220,9 +220,9 @@ void Copter::userhook_FastLoop()
         target_pitch = ahrs.pitch;
         frame_yaw_offset = (double)ToRad(ahrs.yaw_sensor)/100;
         //reduce max_inno_m on flight
-        max_inno_m[0] = 0.8;
-        max_inno_m[1] = 0.8;
-        max_inno_m[2] = 0.8;
+        max_inno_m[0] = 5;
+        max_inno_m[1] = 5;
+        max_inno_m[2] = 5;
         // Reset PID value
         pid_posx.pid_reset();
         pid_posy.pid_reset();
@@ -259,16 +259,16 @@ void Copter::userhook_FastLoop()
 
         circle_v.x = -circle_r * circle_w * sin(circle_alpha);
         circle_v.y = circle_r * circle_w * cos(circle_alpha);
-        circle_a.x = -circle_r * circle_w*circle_w * cos(circle_alpha);
-        circle_a.y = -circle_r * circle_w*circle_w * sin(circle_alpha);
+        // circle_a.x = -circle_r * circle_w*circle_w * cos(circle_alpha);
+        // circle_a.y = -circle_r * circle_w*circle_w * sin(circle_alpha);
         // calc circle_heading
         circle_heading = atan2(circle_v.x,circle_v.y);
         // update target pos
         v3f_target_control.x = circle_x;
         v3f_target_control.y = circle_y;   
-        // update feedforward accel
-        target_acc_desire.x = circle_a.x;
-        target_acc_desire.y = circle_a.y;
+        // // update feedforward accel
+        // target_acc_desire.x = circle_a.x;
+        // target_acc_desire.y = circle_a.y;
         // update feedforward vel
         target_vel_desire.x = circle_v.x;
         target_vel_desire.y = circle_v.y;
@@ -290,16 +290,16 @@ void Copter::userhook_FastLoop()
         circle_y += CENTER_Y;
         circle_v.x = (circle_r*circle_w*sin(circle_alpha)*(pow(sin(circle_alpha),2) - 3))/pow((pow(sin(circle_alpha),2) + 1),2);
         circle_v.y = -(circle_r*circle_w*(3*pow(sin(circle_alpha),2) - 1))/pow((pow(sin(circle_alpha),2) + 1),2);
-        circle_a.x = (circle_r*pow(circle_w,2)*cos(circle_alpha)*(10*pow(cos(circle_alpha),2) + pow(cos(circle_alpha),4) - 8))/(pow(pow(cos(circle_alpha),2) - 2,3));
-        circle_a.y = (circle_r*pow(circle_w,2)*(14*sin(2*circle_alpha) + 3*sin(4*circle_alpha)))/(4*pow(pow(cos(circle_alpha),2) - 2,3));
+        // circle_a.x = (circle_r*pow(circle_w,2)*cos(circle_alpha)*(10*pow(cos(circle_alpha),2) + pow(cos(circle_alpha),4) - 8))/(pow(pow(cos(circle_alpha),2) - 2,3));
+        // circle_a.y = (circle_r*pow(circle_w,2)*(14*sin(2*circle_alpha) + 3*sin(4*circle_alpha)))/(4*pow(pow(cos(circle_alpha),2) - 2,3));
         // calc circle_heading
         circle_heading = atan2(circle_v.x, circle_v.y);
         // update target pos
         v3f_target_control.x = circle_x;
         v3f_target_control.y = circle_y; 
-        // calc feedforward accel
-        target_acc_desire.x = circle_a.x;
-        target_acc_desire.y = circle_a.y;
+        // // calc feedforward accel
+        // target_acc_desire.x = circle_a.x;
+        // target_acc_desire.y = circle_a.y;
         // update feedforward vel
         target_vel_desire.x = circle_v.x;
         target_vel_desire.y = circle_v.y;
@@ -320,19 +320,18 @@ void Copter::userhook_FastLoop()
         circle_y = circle_x * sin(circle_alpha);
         circle_x += CENTER_X;
         circle_y += CENTER_Y;
-
         circle_v.x = -circle_r*circle_w*sin(circle_alpha);
         circle_v.y = circle_r*circle_w*cos(2*circle_alpha);
-        circle_a.x = -circle_r*pow(circle_w,2)*cos(circle_alpha);
-        circle_a.y = -2*circle_r*pow(circle_w,2)*sin(2*circle_alpha);
+        // circle_a.x = -circle_r*pow(circle_w,2)*cos(circle_alpha);
+        // circle_a.y = -2*circle_r*pow(circle_w,2)*sin(2*circle_alpha);
         // calc circle_heading
         circle_heading = atan2(circle_v.x, circle_v.y);
         // update target pos
         v3f_target_control.x = circle_x;
         v3f_target_control.y = circle_y; 
-        // calc feedforward accel
-        target_acc_desire.x = circle_a.x;
-        target_acc_desire.y = circle_a.y;
+        // // calc feedforward accel
+        // target_acc_desire.x = circle_a.x;
+        // target_acc_desire.y = circle_a.y;
         // update feedforward vel
         target_vel_desire.x = circle_v.x;
         target_vel_desire.y = circle_v.y;
@@ -365,6 +364,8 @@ void Copter::userhook_FastLoop()
     // Est loop duration
     // k_timer = AP_HAL::micros()-k_timer;
     // cliSerial->printf("t %f\r\n",(float)k_timer);
+
+
 }
 
 #endif
@@ -389,16 +390,19 @@ void Copter::userhook_MediumLoop()
     pid_posx.pid_lpf_value = g.user_pid_lpf_value;
     pid_posy.pid_lpf_value = g.user_pid_lpf_value;
     // pid_mode = g.user_pid_mode;
-
     // h_accel_cms = g.user_accel_max;
     // h_speed_cms = g.user_speed_max;
-
     // circle_r = g.user_circle_r;
     // circle_T = g.user_circle_T;
     // circle_w = 2*PI_NUMBER/circle_T; 
-
-    lean_angle_max = g.user_lean_max;
     // kalman_type = g.user_kalman_type;
+
+    // Update MP parameter
+    pos_kp = g.user_pid2_kp;
+    vel_kp = g.user_pid2_kd;
+    vel_ki = g.user_pid2_ki;
+    kff = g.user_pid2_kff;
+    lean_angle_max = g.user_lean_max;
     // put your 20Hz code here
 //==============================TEMPERATURE======================================//
     // air_temperature = barometer.get_temperature();
@@ -407,17 +411,11 @@ void Copter::userhook_MediumLoop()
 //==============================IPS_TRANSMIT======================================//
     hal.uartE->printf("{PARAM,TRIGGER_US}\n");
     ips_timer = AP_HAL::millis();    // trigger IPS_transmission on Tiva C
-    // update_slowloop = 1;
-        // Update MP parameter
-    pos_kp = g.user_pid2_kp;
-    vel_kp = g.user_pid2_kd;
-    vel_ki = g.user_pid2_ki;
-    kff = g.user_pid2_kff;
 
     //==============================GUI_PLANNER======================================//
     // SEND POSITION TO GUI 20Hz
     // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
-    hal.uartD->printf("{\"x\":%d,\"y\":%d,\"tx\":%d,\"ty\":%d,\"a\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)v3f_target_control.x,(int)v3f_target_control.y,(int)heading_ctrl_mp);
+    // hal.uartD->printf("{\"x\":%d,\"y\":%d,\"tx\":%d,\"ty\":%d,\"a\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)v3f_target_control.x,(int)v3f_target_control.y,(int)heading_ctrl_mp);
     // GET TARGET FROM GUI
     gui_bytes = hal.uartD->available();
     while (gui_bytes-- > 0) {
@@ -526,7 +524,6 @@ void Copter::userhook_MediumLoop()
                     }  
                 }
             }
-
             gui_buff = 0;
             gui_state = 0;
         }
@@ -537,6 +534,13 @@ void Copter::userhook_MediumLoop()
             }
         }
     }
+
+            //==============================GUI_PLANNER======================================//
+    // SEND POSITION TO GUI 20Hz
+    // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
+    hal.uartD->printf("{\"x\":%d,\"y\":%d,\"tx\":%d,\"ty\":%d,\"a\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)v3f_target_control.x,(int)v3f_target_control.y,(int)heading_ctrl_mp);
+
+
 }
 #endif
 

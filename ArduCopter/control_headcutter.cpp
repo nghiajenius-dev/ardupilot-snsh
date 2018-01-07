@@ -159,7 +159,7 @@ void Copter::headcutter_run()
                 pid_pitch_ = pid_posy.pid_process(error_y);
 
                 pid_roll_ *= 100; // centi degree
-                pid_pitch_ *= 100;//re
+                pid_pitch_ *= 100;
 
                 // // feedforward
                 // if((en_feedforward == 1)&&(trajectory_type != 0)){
@@ -213,8 +213,8 @@ void Copter::headcutter_run()
 
                     // add velocity feedforward
                     // if(en_feedforward == 1){
-                        vel_target_x += 0.7 * target_vel_desire.x;
-                        vel_target_y += 0.7 * target_vel_desire.y;
+                        vel_target_x += kff * target_vel_desire.x;
+                        vel_target_y += kff * target_vel_desire.y;
                     // }
 
                 //  // scale velocity within speed limit
@@ -368,7 +368,8 @@ void Copter::headcutter_run()
 
         if(heading_mode == 0){                      // HOLD: all mode
             // heading_ctrl = frame_yaw_offset * 100;
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+            // attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+            attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, heading_ctrl, true, get_smoothing_gain());
         }
         else if(heading_mode == 1){                 // ALONG: exclude HOVER mode
             // heading_ctrl = ToDeg(circle_heading + frame_yaw_offset)*100;  

@@ -25,10 +25,10 @@ uint16_t c_state;
 
 // CONTROL LOOP
 bool update_loop;
-bool update_slowloop;
+// bool update_slowloop;
 // SENSORS
 float air_temperature;
-Vector3f ips_gyro, ips_accel;
+// Vector3f ips_gyro, ips_accel;
 Vector2f opt_flowRate;
 Vector2f opt_bodyRate;
 uint32_t opt_integration_timespan;
@@ -45,7 +45,7 @@ double lidar_h;
 double k_pos[3];
 double k_vel[3];
 uint32_t k_timer;
-double ins_att[3];		//roll, pitch, yaw
+// double ins_att[3];		//roll, pitch, yaw
 double yaw_angle;		//[rad]
 double frame_yaw_offset;
 double max_inno_m[3];
