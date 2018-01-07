@@ -162,7 +162,7 @@ void Copter::headcutter_run()
                 pid_pitch_ *= 100;
 
                 // feedforward in centi-degree
-                if(en_feedforward == 1){
+                if((en_feedforward == 1) && (trajectory_type != 0)){
                     pid_roll_ += kff * target_acc_desire.x;
                     pid_pitch_ += kff * target_acc_desire.y;
                 }

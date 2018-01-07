@@ -236,6 +236,8 @@ void Copter::userhook_FastLoop()
         // zero feedforward velocity in hover
         target_vel_desire.x = 0.0f;
         target_vel_desire.y = 0.0f;
+        target_acc_desire.x = 0.0f;
+        target_acc_desire.y = 0.0f;
         // Update from GUI
         // v3f_target_control.x = g.user_hover_x;
         // v3f_target_control.y = g.user_hover_y;  
@@ -341,6 +343,8 @@ void Copter::userhook_FastLoop()
         // zero feedforward velocity in loiter
         target_vel_desire.x = 0.0f;
         target_vel_desire.y = 0.0f;
+        target_acc_desire.x = 0.0f;
+        target_acc_desire.y = 0.0f;
         // Update from GUI
         // v3f_target_control.x = g.user_hover_x;
         // v3f_target_control.y = g.user_hover_y;
@@ -360,7 +364,8 @@ void Copter::userhook_FastLoop()
         // attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, heading_ctrl, true, get_smoothing_gain());
     }
     // heading_ctrl_mp [degree]: no_offset
-    heading_ctrl_mp = heading_ctrl/100 - ToDeg(frame_yaw_offset);   //degree
+    // heading_ctrl_mp = heading_ctrl/100 - ToDeg(frame_yaw_offset);   //degree
+    heading_ctrl_mp = ahrs.yaw_sensor/100 - ToDeg(frame_yaw_offset);   //degree
     // Est loop duration
     // k_timer = AP_HAL::micros()-k_timer;
     // cliSerial->printf("t %f\r\n",(float)k_timer);
@@ -391,7 +396,7 @@ void Copter::userhook_MediumLoop()
 
     pid_posx.pid_lpf_value = g.user_pid_lpf_value;
     pid_posy.pid_lpf_value = g.user_pid_lpf_value;
-    pid_mode = g.user_pid_mode;
+    // pid_mode = g.user_pid_mode;
     // h_accel_cms = g.user_accel_max;
     // h_speed_cms = g.user_speed_max;
     // circle_r = g.user_circle_r;
@@ -487,7 +492,7 @@ void Copter::userhook_MediumLoop()
                 // 0: us 
                 // 1: us+opt
                 if((gui_target >= 0) && (gui_target <= 1)){
-                    kalman_type = gui_target;     
+                    // kalman_type = gui_target;     
                 }
             }
             j_value = js0n("ff", 0, &gui_char[1] , strlen(&gui_char[1]), &j_valen);
