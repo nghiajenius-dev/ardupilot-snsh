@@ -158,16 +158,14 @@ void Copter::headcutter_run()
                 pid_roll_ = pid_posx.pid_process(error_x);           //Uc: control angle [degree]
                 pid_pitch_ = pid_posy.pid_process(error_y);
 
-                pid_roll_ *= 100; // centi degree
+                pid_roll_ *= 100; // centi-degree
                 pid_pitch_ *= 100;
 
-                // // feedforward
-                // if((en_feedforward == 1)&&(trajectory_type != 0)){
-                //     accel_feedforward_x = kff * atanf(target_acc_desire.x/(GRAVITY_MSS * 100))*(18000/M_PI); //centi-degree
-                //     accel_feedforward_y = kff * atanf(target_acc_desire.y/(GRAVITY_MSS * 100))*(18000/M_PI);
-                //     pid_roll_ += accel_feedforward_x;
-                //     pid_pitch_ += accel_feedforward_y;
-                // }
+                // feedforward in centi-degree
+                if(en_feedforward == 1){
+                    pid_roll_ += kff * target_acc_desire.x;
+                    pid_pitch_ += kff * target_acc_desire.y;
+                }
                 
                 // lean_angle_max limit [centi-deg]
                 h_accel_total = sqrt(pid_roll_*pid_roll_ + pid_pitch_*pid_pitch_);
@@ -368,8 +366,8 @@ void Copter::headcutter_run()
 
         if(heading_mode == 0){                      // HOLD: all mode
             // heading_ctrl = frame_yaw_offset * 100;
-            // attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
-            attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, heading_ctrl, true, get_smoothing_gain());
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pid_roll, pid_pitch, target_yaw_rate, get_smoothing_gain());
+            // attitude_control->input_euler_angle_roll_pitch_yaw(pid_roll, pid_pitch, heading_ctrl, true, get_smoothing_gain());
         }
         else if(heading_mode == 1){                 // ALONG: exclude HOVER mode
             // heading_ctrl = ToDeg(circle_heading + frame_yaw_offset)*100;  
