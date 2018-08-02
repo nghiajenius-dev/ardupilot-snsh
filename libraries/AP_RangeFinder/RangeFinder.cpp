@@ -612,8 +612,9 @@ void RangeFinder::detect_instance(uint8_t instance)
     switch (type) {
     case RangeFinder_TYPE_PLI2C:
     case RangeFinder_TYPE_PLI2CV3:
-        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance], type))) {
-            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(0, *this, instance, state[instance], type));
+    case RangeFinder_TYPE_PLI2CV3HP:
+        if (!_add_backend(AP_RangeFinder_PulsedLightLRF::detect(2, *this, instance, state[instance], type))) {
+            _add_backend(AP_RangeFinder_PulsedLightLRF::detect(1, *this, instance, state[instance], type));
         }
         break;
     case RangeFinder_TYPE_MBI2C:

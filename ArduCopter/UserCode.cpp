@@ -70,10 +70,10 @@ void Copter::userhook_FastLoop()
             ips_data[4] = (ips_char[17]-0x30)*100 + (ips_char[18]-0x30)*10 + (ips_char[19]-0x30);
 
             for(int i = 0; i < MAX_REV_NODE; i++){
-                nlsMR[i] = (calib_a[i] * ips_data[i] + calib_k[i]) * 10;    //mm
+                nlsMR[i] = (calib_a[i] * ips_data[i] + calib_k[i]) ;    //cm
             } 
             // cliSerial->printf("R:%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4]);
-            // cliSerial->printf("D:%.0f,%.0f,%.0f,%.0f,%.0f\r\n",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);
+            cliSerial->printf("%.0f,%.0f,%.0f,%.0f,%.0f   ",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);
             ips_flag = 1;   // finish convert data --> start NLS
             c_buff = 0;
             c_state = 0;
@@ -90,7 +90,7 @@ void Copter::userhook_FastLoop()
     if (ips_flag == 1){
         err_cnt = 0;
         for(int i = 0; i<5; i++){
-            if(nlsMR[i]>3500){
+            if(nlsMR[i]>700){
                 err_cnt++;
             }
         }
@@ -101,10 +101,10 @@ void Copter::userhook_FastLoop()
             for(int i = 0; i < 5; i++){
                 tempMR[i] = nlsMR[i];    //mm
             }
-            LeastSquare_NJ(5,tempMR,tempRCM, 2, R_OP); 
-            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)&&(R_OP[0]<2500)&&(R_OP[1]<2500)&&(R_OP[2]<2500)){
+            LeastSquare_NJ(5,tempMR,tempRCM, 1, R_OP); 
+            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)&&(R_OP[0]<700)&&(R_OP[1]<700)&&(R_OP[2]<700)){
                 nls_healthy = true;
-                // cliSerial->printf("NLS:%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
+                cliSerial->printf("%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
             }
             else{
                 nls_healthy = false; 
@@ -153,11 +153,11 @@ void Copter::userhook_FastLoop()
 //=================================KALMAN======================================//
     // NLS_TIMER
     if(nls_healthy){
-        // Convert mm -> m
+        // Convert cm -> m
         ips_timer = AP_HAL::millis() - ips_timer; 
-        R_OP[0] /= 1000; 
-        R_OP[1] /= 1000;
-        R_OP[2] /= 1000; 
+        R_OP[0] /= 100; 
+        R_OP[1] /= 100;
+        R_OP[2] /= 100; 
 
         nls_timeout_s = (double)(AP_HAL::millis() - _nls_timeout_s)/1000;
         _nls_timeout_s = (double)AP_HAL::millis();
@@ -372,7 +372,7 @@ void Copter::userhook_FastLoop()
     //==============================GUI_PLANNER======================================//
     // SEND POSITION TO GUI 20Hz
     // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
-    hal.uartD->printf("{\"x\":%d,\"y\":%d,\"tx\":%d,\"ty\":%d,\"a\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)v3f_target_control.x,(int)v3f_target_control.y,(int)heading_ctrl_mp);
+    hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
 }
 
 #endif
