@@ -38,6 +38,11 @@ void Copter::userhook_init()
     pid_mode = 0;
     en_feedforward = 0;
     heading_mode = 0;
+
+    // CALC CALIB PARAMETER
+    air_temperature = barometer.get_temperature();
+    calib_a = (331.3+0.6*air_temperature)*100/40000;
+    calib_k = 5; //cm
 }
 #endif
  
@@ -61,19 +66,16 @@ void Copter::userhook_FastLoop()
             c_buff = 1;
             c_state = 1;
         }
-        else if((c_state==1)&&(ips_char[0] == '\n')){   // end-of-frame: start parsing
-            // data format: "s123,056,789,012\r\n"                
-            ips_data[0] = (ips_char[1]-0x30)*100 + (ips_char[2]-0x30)*10 + (ips_char[3]-0x30);  
-            ips_data[1] = (ips_char[5]-0x30)*100 + (ips_char[6]-0x30)*10 + (ips_char[7]-0x30);
-            ips_data[2] = (ips_char[9]-0x30)*100 + (ips_char[10]-0x30)*10 + (ips_char[11]-0x30);
-            ips_data[3] = (ips_char[13]-0x30)*100 + (ips_char[14]-0x30)*10 + (ips_char[15]-0x30);
-            ips_data[4] = (ips_char[17]-0x30)*100 + (ips_char[18]-0x30)*10 + (ips_char[19]-0x30);
-
+        else if((c_state == 1) && (ips_char[0] == '\n')){   // end-of-frame: start parsing
+            // data format: "s123,056,789,012\r\n"  
+            for(uint8_t cnt = 0; cnt < MAX_REV_NODE; cnt++){
+                ips_data[cnt] = (ips_char[4*cnt+1]-0x30)*100 + (ips_char[4*cnt+2]-0x30)*10 + (ips_char[4*cnt+3]-0x30);  
+            }              
             for(int i = 0; i < MAX_REV_NODE; i++){
-                nlsMR[i] = (calib_a[i] * ips_data[i] + calib_k[i]) ;    //cm
+                nlsMR[i] = (calib_a * ips_data[i] + calib_k) ;    //cm
             } 
-            // cliSerial->printf("R:%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4]);
-            cliSerial->printf("%.0f,%.0f,%.0f,%.0f,%.0f   ",nlsMR[0],nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4]);
+            // cliSerial->printf("R: %d,%d,%d,%d,%d\r\n",nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4],nlsMR[5]);
+            //     ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4],ips_data[5],ips_data[6],ips_data[7],ips_data[8],ips_data[9]);
             ips_flag = 1;   // finish convert data --> start NLS
             c_buff = 0;
             c_state = 0;
@@ -104,7 +106,7 @@ void Copter::userhook_FastLoop()
             LeastSquare_NJ(5,tempMR,tempRCM, 1, R_OP); 
             if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)&&(R_OP[0]<700)&&(R_OP[1]<700)&&(R_OP[2]<700)){
                 nls_healthy = true;
-                cliSerial->printf("%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
+                // cliSerial->printf("%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
             }
             else{
                 nls_healthy = false; 
@@ -557,7 +559,10 @@ void Copter::userhook_SlowLoop()
 #ifdef USERHOOK_SUPERSLOWLOOP
 void Copter::userhook_SuperSlowLoop()
 {
-
     // put your 1Hz code here
+    // UPDATE CALIB PARAMETER
+    air_temperature = barometer.get_temperature();
+    calib_a = (331.3+0.6*air_temperature)*100/40000;   
+    // cliSerial->printf("ka:%.2f %f\r\n", air_temperature,calib_a);
 }
 #endif

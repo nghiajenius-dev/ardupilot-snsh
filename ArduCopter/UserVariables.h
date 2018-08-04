@@ -52,25 +52,24 @@ double max_inno_m[3];
 double nls_timeout_s,_nls_timeout_s; //s
 
 // NLS
-const double calib_a[5] = { 0.8651,0.8651,0.8651,0.8651,0.8651 };      // 1->5,cm
-const double calib_k[5] = { 2.5, 2.5, 2.5, 2.5, 2.5 };             // 1->5
+double calib_a;
+double calib_k;
 double R_OP[3];
-// const double nlsRCM[15] = {1050, 2043, 1055, 59, 1050, 58, 1055, 2045, 1050, 1050, 2064, 2064, 2064, 2064, 1900};
-const double nlsRCM[15] = {	0,180,360,180,180, //cm
-							180,60,180,330,180, 
-							300,300,300,300,301};
+// const double nlsRCM[15] = {	0,180,360,180,180, 		//x[cm]
+// 							180,60,180,330,180, 	//y
+// 							300,300,300,300,301};	//z: must be different
 
-double nlsMR[5];
+const double nlsRCM[15] = {						
+	7.2558,  205.6206,  208.5917,  394.7712,  207.3584,
+  200.5476,  356.2998,  201.6753,  203.9454,   78.8008,
+  339.6174,  340.9373,  317.4506,  342.5413,  343.3573};
+
+double nlsMR[MAX_REV_NODE];
 double tempRCM[15];
-double tempMR[5];
+double tempMR[MAX_REV_NODE];
 int err_cnt;
 
 bool nls_healthy;
-// double sortRCM[15];
-// uint16_t sortMR[5];
-// uint16_t maxMR;
-// int c_i, c_j, c_k;
-// int max_NOR, max_index;
 float kalman_type;
 volatile uint16_t s16_range_finder;
 
