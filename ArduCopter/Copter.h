@@ -150,10 +150,10 @@ extern "C"{
 #include "LPF_pos_terminate.h"
 #include "LPF_pos_initialize.h"    
 
-#include "LeastSquare_NJ.h"
-#include "LeastSquare_NJ_types.h"
-#include "LeastSquare_NJ_terminate.h"
-#include "LeastSquare_NJ_initialize.h"  
+#include "LeastSquare2.h"
+#include "LeastSquare2_types.h"
+#include "LeastSquare2_terminate.h"
+#include "LeastSquare2_initialize.h"  
 
 #include "js0n.h"    
 }

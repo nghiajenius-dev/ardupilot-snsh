@@ -1,13 +1,13 @@
 /*
  * File: mldivide.c
  *
- * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 06-Nov-2017 15:15:42
+ * MATLAB Coder version            : 3.4
+ * C/C++ source code generated on  : 14-Aug-2018 18:35:09
  */
 
 /* Include Files */
 #include "rt_nonfinite.h"
-#include "LeastSquare_NJ.h"
+#include "LeastSquare2.h"
 #include "mldivide.h"
 
 /* Function Definitions */

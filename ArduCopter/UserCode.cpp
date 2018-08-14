@@ -16,7 +16,7 @@ void Copter::userhook_init()
     hal.uartD->begin(115200);
    
 #ifdef RUN_TRILATERATION
-    LeastSquare_NJ_initialize();
+    LeastSquare2_initialize();
 #endif
     pid_posx.init(pid_pos_x_param);
     pid_posy.init(pid_pos_y_param);
@@ -42,7 +42,7 @@ void Copter::userhook_init()
     // CALC CALIB PARAMETER
     air_temperature = barometer.get_temperature();
     calib_a = (331.3+0.6*air_temperature)*100/40000;
-    calib_k = 5; //cm
+    calib_k = 0; //cm
 }
 #endif
  
@@ -67,23 +67,25 @@ void Copter::userhook_FastLoop()
             c_state = 1;
         }
         else if((c_state == 1) && (ips_char[0] == '\n')){   // end-of-frame: start parsing
-            // data format: "s123,056,789,012\r\n"  
-            for(uint8_t cnt = 0; cnt < MAX_REV_NODE; cnt++){
-                ips_data[cnt] = (ips_char[4*cnt+1]-0x30)*100 + (ips_char[4*cnt+2]-0x30)*10 + (ips_char[4*cnt+3]-0x30);  
-            }              
-            for(int i = 0; i < MAX_REV_NODE; i++){
-                nlsMR[i] = (calib_a * ips_data[i] + calib_k) ;    //cm
-            } 
-            // cliSerial->printf("R: %d,%d,%d,%d,%d\r\n",nlsMR[1],nlsMR[2],nlsMR[3],nlsMR[4],nlsMR[5]);
-            //     ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4],ips_data[5],ips_data[6],ips_data[7],ips_data[8],ips_data[9]);
-            ips_flag = 1;   // finish convert data --> start NLS
+            // data frame: "s123,056,789,012\n" 
+            if (c_buff == 4*(MAX_REV_NODE-1)+5){ //only process correct frame
+                for(uint8_t cnt = 0; cnt < MAX_REV_NODE; cnt++){
+                    ips_data[cnt] = (ips_char[4*cnt+1]-0x30)*100 + (ips_char[4*cnt+2]-0x30)*10 + (ips_char[4*cnt+3]-0x30);  
+                }              
+                for(int i = 0; i < MAX_REV_NODE; i++){
+                    nlsMR[i] = (calib_a * ips_data[i] + calib_k) ;    //cm
+                } 
+                // cliSerial->printf("R:%d,%d,%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4],ips_data[5],ips_data[6]);
+                //     ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4],ips_data[5],ips_data[6],ips_data[7],ips_data[8],ips_data[9]);
+                ips_flag = 1;   // finish convert data --> start NLS
+            }
             c_buff = 0;
             c_state = 0;
         }
         else{   // fill buffer after catch start header
             if(c_state == 1){
                 ips_char[c_buff] = ips_char[0];
-                // hal.uartF->printf("%c",ips_char[c_buff]);
+                // cliSerial->printf("%i %c\n",c_buff,ips_char[c_buff]);
                 c_buff++;
             }
         }
@@ -91,22 +93,23 @@ void Copter::userhook_FastLoop()
 //================================NLS====================================//
     if (ips_flag == 1){
         err_cnt = 0;
-        for(int i = 0; i<5; i++){
-            if(nlsMR[i]>700){
+        for(int i = 0; i < MAX_REV_NODE; i++){
+            if(nlsMR[i] > MAX_TOF_DISTANCE){
                 err_cnt++;
             }
         }
-        if(err_cnt<2){      // at least 4 valid node             
-            for(int i = 0; i < 15; i++){
+        // if(err_cnt<= (MAX_REV_NODE-4)){      // at least 4 valid node  
+        if(err_cnt == 0){            
+            for(int i = 0; i < MAX_REV_NODE*3; i++){
                 tempRCM[i] = nlsRCM[i];    //temp value
             }
-            for(int i = 0; i < 5; i++){
-                tempMR[i] = nlsMR[i];    //mm
+            for(int i = 0; i < MAX_REV_NODE; i++){
+                tempMR[i] = nlsMR[i];    //cm
             }
-            LeastSquare_NJ(5,tempMR,tempRCM, 1, R_OP); 
-            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0)&&(R_OP[0]<700)&&(R_OP[1]<700)&&(R_OP[2]<700)){
+            LeastSquare2(MAX_REV_NODE,7,tempMR,tempRCM, 2, R_OP); 
+            if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0) && (R_OP[0]<MAX_XY_POS)&&(R_OP[1]<MAX_XY_POS)&&(R_OP[2]<MAX_Z_POS)){
                 nls_healthy = true;
-                // cliSerial->printf("%d,%d,%d\r\n",(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
+                // cliSerial->printf("NLS %d,%d,%d,%d\r\n",MAX_REV_NODE-err_cnt,(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
             }
             else{
                 nls_healthy = false; 
@@ -149,8 +152,6 @@ void Copter::userhook_FastLoop()
     // }
     // cliSerial->printf("%.1f,%.1f\r\n",(double)ToDeg(frame_yaw_offset),(double)ToDeg(yaw_angle));
     // hal.uartF->printf("INS:%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\r\n",ips_gyro.x,ips_gyro.y,ips_gyro.z,ips_accel.x,ips_accel.y,ips_accel.z);
-
-
 
 //=================================KALMAN======================================//
     // NLS_TIMER
@@ -563,6 +564,6 @@ void Copter::userhook_SuperSlowLoop()
     // UPDATE CALIB PARAMETER
     air_temperature = barometer.get_temperature();
     calib_a = (331.3+0.6*air_temperature)*100/40000;   
-    // cliSerial->printf("ka:%.2f %f\r\n", air_temperature,calib_a);
+    // cliSerial->printf("ka:%.3f %f\r\n", air_temperature,calib_a);
 }
 #endif

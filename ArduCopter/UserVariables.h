@@ -5,12 +5,15 @@
 // variables
 #ifdef USERHOOK_VARIABLES
 #define BUFFER_FRAME_SIZE   250
-#define MAX_REV_NODE		5
+#define MAX_REV_NODE		7
 #define PI_NUMBER 			3.14159f
 #define CENTER_X			110		//cm
 #define CENTER_Y			110		//cm
 #define MIN_FENCE_CM 		40
 #define MAX_FENCE_CM 		180
+#define MAX_TOF_DISTANCE    800
+#define MAX_XY_POS    		450
+#define MAX_Z_POS    		350
 // IPS
 #define RUN_TRILATERATION
 uint16_t ips_bytes;
@@ -59,13 +62,20 @@ double R_OP[3];
 // 							180,60,180,330,180, 	//y
 // 							300,300,300,300,301};	//z: must be different
 
-const double nlsRCM[15] = {						
-	7.2558,  205.6206,  208.5917,  394.7712,  207.3584,
-  200.5476,  356.2998,  201.6753,  203.9454,   78.8008,
-  339.6174,  340.9373,  317.4506,  342.5413,  343.3573};
+const double nlsRCM[MAX_REV_NODE*3] = {				
+	291.0698,  198.1481,   16.7031,  381.8444,  198.0192,  104.9728,  199.7348,	// 6calib_pts	
+  	191.6734,  339.9091,  188.5640,  192.0087,   68.3208,  189.5930,  190.2275,
+  	338.1022,  336.8074,  336.6327,  338.2026,  337.4751,  337.1002,  312.6070
+
+	// 292.2629,  195.8769,   13.6291,  381.4104,  200.8723,  100.5476,  199.7435,	//7pts
+ //  	193.2697,  345.9433,  191.8182,  196.0412,   70.8111,  192.8986,  192.9073,
+ //  	338.1330,  337.1258,  336.0217,  338.5910,  338.5729,  336.9318,  313.5814
+
+};
+
 
 double nlsMR[MAX_REV_NODE];
-double tempRCM[15];
+double tempRCM[MAX_REV_NODE*3];
 double tempMR[MAX_REV_NODE];
 int err_cnt;
 

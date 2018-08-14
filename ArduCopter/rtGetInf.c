@@ -1,8 +1,8 @@
 /*
  * File: rtGetInf.c
  *
- * MATLAB Coder version            : 3.3
- * C/C++ source code generated on  : 16-Dec-2017 17:56:48
+ * MATLAB Coder version            : 3.4
+ * C/C++ source code generated on  : 14-Aug-2018 18:35:09
  */
 
 /*
@@ -19,42 +19,37 @@
  */
 real_T rtGetInf(void)
 {
-  size_t bitsPerReal = sizeof(real_T) * (NumBitsPerChar);
   real_T inf = 0.0;
-  if (bitsPerReal == 32U) {
-    inf = rtGetInfF();
-  } else {
-    uint16_T one = 1U;
-    enum {
-      LittleEndian,
-      BigEndian
-    } machByteOrder = (*((uint8_T *) &one) == 1U) ? LittleEndian : BigEndian;
-    switch (machByteOrder) {
-     case LittleEndian:
-      {
-        union {
-          LittleEndianIEEEDouble bitVal;
-          real_T fltVal;
-        } tmpVal;
+  uint16_T one = 1U;
+  enum {
+    LittleEndian,
+    BigEndian
+  } machByteOrder = (*((uint8_T *) &one) == 1U) ? LittleEndian : BigEndian;
+  switch (machByteOrder) {
+   case LittleEndian:
+    {
+      union {
+        LittleEndianIEEEDouble bitVal;
+        real_T fltVal;
+      } tmpVal;
 
-        tmpVal.bitVal.words.wordH = 0x7FF00000U;
-        tmpVal.bitVal.words.wordL = 0x00000000U;
-        inf = tmpVal.fltVal;
-        break;
-      }
+      tmpVal.bitVal.words.wordH = 0x7FF00000U;
+      tmpVal.bitVal.words.wordL = 0x00000000U;
+      inf = tmpVal.fltVal;
+      break;
+    }
 
-     case BigEndian:
-      {
-        union {
-          BigEndianIEEEDouble bitVal;
-          real_T fltVal;
-        } tmpVal;
+   case BigEndian:
+    {
+      union {
+        BigEndianIEEEDouble bitVal;
+        real_T fltVal;
+      } tmpVal;
 
-        tmpVal.bitVal.words.wordH = 0x7FF00000U;
-        tmpVal.bitVal.words.wordL = 0x00000000U;
-        inf = tmpVal.fltVal;
-        break;
-      }
+      tmpVal.bitVal.words.wordH = 0x7FF00000U;
+      tmpVal.bitVal.words.wordL = 0x00000000U;
+      inf = tmpVal.fltVal;
+      break;
     }
   }
 
@@ -80,42 +75,37 @@ real32_T rtGetInfF(void)
  */
 real_T rtGetMinusInf(void)
 {
-  size_t bitsPerReal = sizeof(real_T) * (NumBitsPerChar);
   real_T minf = 0.0;
-  if (bitsPerReal == 32U) {
-    minf = rtGetMinusInfF();
-  } else {
-    uint16_T one = 1U;
-    enum {
-      LittleEndian,
-      BigEndian
-    } machByteOrder = (*((uint8_T *) &one) == 1U) ? LittleEndian : BigEndian;
-    switch (machByteOrder) {
-     case LittleEndian:
-      {
-        union {
-          LittleEndianIEEEDouble bitVal;
-          real_T fltVal;
-        } tmpVal;
+  uint16_T one = 1U;
+  enum {
+    LittleEndian,
+    BigEndian
+  } machByteOrder = (*((uint8_T *) &one) == 1U) ? LittleEndian : BigEndian;
+  switch (machByteOrder) {
+   case LittleEndian:
+    {
+      union {
+        LittleEndianIEEEDouble bitVal;
+        real_T fltVal;
+      } tmpVal;
 
-        tmpVal.bitVal.words.wordH = 0xFFF00000U;
-        tmpVal.bitVal.words.wordL = 0x00000000U;
-        minf = tmpVal.fltVal;
-        break;
-      }
+      tmpVal.bitVal.words.wordH = 0xFFF00000U;
+      tmpVal.bitVal.words.wordL = 0x00000000U;
+      minf = tmpVal.fltVal;
+      break;
+    }
 
-     case BigEndian:
-      {
-        union {
-          BigEndianIEEEDouble bitVal;
-          real_T fltVal;
-        } tmpVal;
+   case BigEndian:
+    {
+      union {
+        BigEndianIEEEDouble bitVal;
+        real_T fltVal;
+      } tmpVal;
 
-        tmpVal.bitVal.words.wordH = 0xFFF00000U;
-        tmpVal.bitVal.words.wordL = 0x00000000U;
-        minf = tmpVal.fltVal;
-        break;
-      }
+      tmpVal.bitVal.words.wordH = 0xFFF00000U;
+      tmpVal.bitVal.words.wordL = 0x00000000U;
+      minf = tmpVal.fltVal;
+      break;
     }
   }
 
