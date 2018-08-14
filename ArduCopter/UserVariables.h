@@ -14,6 +14,7 @@
 #define MAX_TOF_DISTANCE    800
 #define MAX_XY_POS    		450
 #define MAX_Z_POS    		350
+#define MAX_DELTA_DISTANCE	30 //cm
 // IPS
 #define RUN_TRILATERATION
 uint16_t ips_bytes;
@@ -75,9 +76,11 @@ const double nlsRCM[MAX_REV_NODE*3] = {
 
 
 double nlsMR[MAX_REV_NODE];
+double pre_nlsMR[MAX_REV_NODE];
 double tempRCM[MAX_REV_NODE*3];
 double tempMR[MAX_REV_NODE];
 int err_cnt;
+bool first_data;
 
 bool nls_healthy;
 float kalman_type;

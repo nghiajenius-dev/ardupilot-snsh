@@ -14,6 +14,7 @@ void Copter::userhook_init()
     LPF_pos_initialize();
     multirate_kalman_v4_initialize();
     hal.uartD->begin(115200);
+    first_data = 0;
    
 #ifdef RUN_TRILATERATION
     LeastSquare2_initialize();
@@ -78,6 +79,12 @@ void Copter::userhook_FastLoop()
                 // cliSerial->printf("R:%d,%d,%d,%d,%d,%d,%d\r\n",ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4],ips_data[5],ips_data[6]);
                 //     ips_data[0],ips_data[1],ips_data[2],ips_data[3],ips_data[4],ips_data[5],ips_data[6],ips_data[7],ips_data[8],ips_data[9]);
                 ips_flag = 1;   // finish convert data --> start NLS
+                if(first_data==0){
+                    first_data = 1;
+                    for(int i = 0; i < MAX_REV_NODE; i++){
+                        pre_nlsMR[i] = nlsMR[i];    //cm
+                    } 
+                }
             }
             c_buff = 0;
             c_state = 0;
@@ -94,19 +101,24 @@ void Copter::userhook_FastLoop()
     if (ips_flag == 1){
         err_cnt = 0;
         for(int i = 0; i < MAX_REV_NODE; i++){
-            if(nlsMR[i] > MAX_TOF_DISTANCE){
+          if(abs(nlsMR[i] - pre_nlsMR[i]) > MAX_DELTA_DISTANCE){// jump
+                nlsMR[i] = 999; // will be remove in nls sort
                 err_cnt++;
-            }
+          }
+          else{
+            pre_nlsMR[i] = nlsMR[i]; //update correct value
+          }
         }
-        // if(err_cnt<= (MAX_REV_NODE-4)){      // at least 4 valid node  
-        if(err_cnt == 0){            
+
+        cliSerial-printf("err %i\n",err_cnt);
+        if(err_cnt<= (MAX_REV_NODE-4)){      // at least 4 valid node             
             for(int i = 0; i < MAX_REV_NODE*3; i++){
                 tempRCM[i] = nlsRCM[i];    //temp value
             }
             for(int i = 0; i < MAX_REV_NODE; i++){
                 tempMR[i] = nlsMR[i];    //cm
             }
-            LeastSquare2(MAX_REV_NODE,7,tempMR,tempRCM, 2, R_OP); 
+            LeastSquare2(MAX_REV_NODE,MAX_REV_NODE - err_cnt,tempMR,tempRCM, 2, R_OP); 
             if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0) && (R_OP[0]<MAX_XY_POS)&&(R_OP[1]<MAX_XY_POS)&&(R_OP[2]<MAX_Z_POS)){
                 nls_healthy = true;
                 // cliSerial->printf("NLS %d,%d,%d,%d\r\n",MAX_REV_NODE-err_cnt,(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
