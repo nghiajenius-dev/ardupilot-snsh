@@ -7,14 +7,13 @@
 #define BUFFER_FRAME_SIZE   250
 #define MAX_REV_NODE		7
 #define PI_NUMBER 			3.14159f
-#define CENTER_X			110		//cm
-#define CENTER_Y			110		//cm
+#define CENTER_X			180		//cm
+#define CENTER_Y			210		//cm
 #define MIN_FENCE_CM 		40
-#define MAX_FENCE_CM 		180
-#define MAX_TOF_DISTANCE    800
+#define MAX_FENCE_CM 		400
 #define MAX_XY_POS    		450
 #define MAX_Z_POS    		350
-#define MAX_DELTA_DISTANCE	30 //cm
+#define MAX_DELTA_DISTANCE	50 //cm
 // IPS
 #define RUN_TRILATERATION
 uint16_t ips_bytes;

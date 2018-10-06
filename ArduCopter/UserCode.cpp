@@ -26,10 +26,10 @@ void Copter::userhook_init()
     v3f_target_control.x = g.user_hover_x;
     v3f_target_control.y = g.user_hover_y;
 
-    circle_T = 16;// 24s/round
+    circle_T = 24;// 24s/round
     circle_w = 2*PI_NUMBER/circle_T;       
     circle_step = 0;
-    circle_r = 45;
+    circle_r = 40;
     lean_angle_max = 4500;
     max_inno_m[0] = 10;
     max_inno_m[1] = 10;
@@ -110,15 +110,15 @@ void Copter::userhook_FastLoop()
           }
         }
 
-        cliSerial-printf("err %i\n",err_cnt);
-        if(err_cnt<= (MAX_REV_NODE-4)){      // at least 4 valid node             
+        // cliSerial-printf("err %i\n",err_cnt);
+        if(err_cnt<= 2){      // at least 5 valid node , error max 2         
             for(int i = 0; i < MAX_REV_NODE*3; i++){
                 tempRCM[i] = nlsRCM[i];    //temp value
             }
             for(int i = 0; i < MAX_REV_NODE; i++){
                 tempMR[i] = nlsMR[i];    //cm
             }
-            LeastSquare2(MAX_REV_NODE,MAX_REV_NODE - err_cnt,tempMR,tempRCM, 2, R_OP); 
+            LeastSquare2(MAX_REV_NODE,5 ,tempMR,tempRCM, 2, R_OP); 
             if((R_OP[0]>0)&&(R_OP[1]>0)&&(R_OP[2]>0) && (R_OP[0]<MAX_XY_POS)&&(R_OP[1]<MAX_XY_POS)&&(R_OP[2]<MAX_Z_POS)){
                 nls_healthy = true;
                 // cliSerial->printf("NLS %d,%d,%d,%d\r\n",MAX_REV_NODE-err_cnt,(int)R_OP[0],(int)R_OP[1],(int)R_OP[2]);
@@ -384,10 +384,12 @@ void Copter::userhook_FastLoop()
     // Est loop duration
     // k_timer = AP_HAL::micros()-k_timer;
     // cliSerial->printf("t %f\r\n",(float)k_timer);
-    //==============================GUI_PLANNER======================================//
+        //==============================GUI_PLANNER======================================//
     // SEND POSITION TO GUI 20Hz
     // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
-    hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
+    // hal.uartD->printf("{\"x\":%d,\"y\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100));
+    hal.uartD->printf("{\"x\":%d,\"y\":%d,\"tx\":%d,\"ty\":%d,\"a\":%d}\r\n",(int)(k_pos[0]*100),(int)(k_pos[1]*100),(int)v3f_target_control.x,(int)v3f_target_control.y,(int)heading_ctrl_mp);
+
 }
 
 #endif
